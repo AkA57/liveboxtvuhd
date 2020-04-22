@@ -1,12 +1,16 @@
 # liveboxtvuhd
 
-This library is intended for controlling an Orange Livebox TV UHD from Home Assistant 
-appliance.
+Ce module permet de contrôler le décodeur TV UHD 4K Orange depuis Home Assistant (https://www.home-assistant.io/). 
+
+Développé et testé pour le décodeur TV UHD 4K Orange Fibre
 
 
 ## Installation
-1. Download and put "liveboxtvuhd" under your custom_compoment directory
-2. Add liveboxtvuhd to your configuration.yaml
+
+1. Télécharger le dossier "liveboxtvuhd" et placer le placer dans le répertoire **custom_compoment** de Home Assistant.
+
+2. Editez le fichier **configuration.yaml** et ajouter un media_player
+
 
 ```yaml
 media_player:
@@ -16,6 +20,10 @@ media_player:
     scan_interval: 30
 ```
 
+## Exemples
+Avec mini-media-player:
 ![Example](https://github.com/AkA57/liveboxtvuhd/blob/master/liveboxtvuhd.PNG)
 
+Avec le media-player standard
+![Example](https://github.com/AkA57/liveboxtvuhd/blob/master/liveboxtvuhd2.PNG)
 
