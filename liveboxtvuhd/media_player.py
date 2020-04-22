@@ -95,7 +95,7 @@ class LiveboxTvUhdDevice(MediaPlayerDevice):
         self._state = None
         self._channel_list = {}
         self._current_channel = None
-        self._current_program = None
+        self._current_show = None
         self._media_duration = None
         self._media_remaining_time = None
         self._media_image_url = None
@@ -112,10 +112,10 @@ class LiveboxTvUhdDevice(MediaPlayerDevice):
             channel = self._client.channel_name
             if channel is not None:
                 self._current_channel = channel
-                self._current_program = self._client.program_title
-                self._media_duration = self._client.program_duration
-                self._media_image_url = self._client.program_img
-                self._media_remaining_time =  self._client.program_position
+                self._current_show = self._client.show_title
+                self._media_duration = self._client.show_duration
+                self._media_image_url = self._client.show_img
+                self._media_remaining_time =  self._client.show_position
                 self._media_last_updated = dt_util.utcnow()
         except requests.ConnectionError:
             self._state = None
@@ -161,8 +161,8 @@ class LiveboxTvUhdDevice(MediaPlayerDevice):
     def media_title(self):
         """Title of current playing media."""
         if self._current_channel:
-            if self._current_program:
-                return f"{self._current_channel} - {self._current_program}"
+            if self._current_show:
+                return f"{self._current_channel} - {self._current_show}"
             return self._current_channel
 
     @property

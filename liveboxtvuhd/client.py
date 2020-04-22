@@ -39,12 +39,12 @@ class LiveboxTvUhdClient(object):
         self._wol_support = None
         # data from woopic.com
         self._channel_name = None
-        self._program_title = None
-        self._program_definition = None
-        self._program_img = None
-        self._program_start_dt = 0
-        self._program_duration = 0
-        self._program_position = 0
+        self._show_title = None
+        self._show_definition = None
+        self._show_img = None
+        self._show_start_dt = 0
+        self._show_duration = 0
+        self._show_position = 0
         self._last_channel_id = None
         self._cache_channel_img = {}
         assert isinstance(self.info, dict), "Failed to retrive info from {}".format(self.hostname)        
@@ -66,8 +66,8 @@ class LiveboxTvUhdClient(object):
         # If a channel is displayed
         if self._channel_id and self.channel_id != 'NA':
 
-            # We should update all information only if channel or program change
-            if self._channel_id != self._last_channel_id or self._program_position > self._program_duration:
+            # We should update all information only if channel or show change
+            if self._channel_id != self._last_channel_id or self._show_position > self._show_duration:
                 self._last_channel_id = self._channel_id
                 self._channel_name = self.get_channel_from_epg_id(self._channel_id)["name"]
 
@@ -78,23 +78,23 @@ class LiveboxTvUhdClient(object):
                 _data2 =  resp.json()
                 _LOGGER.debug(str(_data2))
                 if _data2:
-                    self._program_title = _data2[self._channel_id][0]["title"]
-                    self._program_definition = _data2[self._channel_id][0]["definition"]
-                    self._program_img = _data2[self._channel_id][0]["covers"][1]["url"]
-                    self._program_start_dt = _data2[self._channel_id][0]["diffusionDate"]
-                    self._program_duration = _data2[self._channel_id][0]["duration"]
+                    self._show_title = _data2[self._channel_id][0]["title"]
+                    self._show_definition = _data2[self._channel_id][0]["definition"]
+                    self._show_img = _data2[self._channel_id][0]["covers"][1]["url"]
+                    self._show_start_dt = _data2[self._channel_id][0]["diffusionDate"]
+                    self._show_duration = _data2[self._channel_id][0]["duration"]
 
             d = dt_util.utcnow()
-            self._program_position = calendar.timegm(d.utctimetuple()) - self._program_start_dt
+            self._show_position = calendar.timegm(d.utctimetuple()) - self._show_start_dt
         else:
             # No channel displayed. Should be HOMEPAGE, NETFLIX, WHATEVER...
             self._channel_id = -1
             self._channel_name = self._osd_context.upper()
-            self._program_title = None
-            self._program_definition = None
-            self._program_img = None
-            self._program_start_dt = 0
-            self._program_duration = 0
+            self._show_title = None
+            self._show_definition = None
+            self._show_img = None
+            self._show_start_dt = 0
+            self._show_duration = 0
         return _data
         
 
@@ -134,28 +134,28 @@ class LiveboxTvUhdClient(object):
         self.set_channel_by_name(value)
     
     @property
-    def program_title(self):
-        return self._program_title
+    def show_title(self):
+        return self._show_title
 
     @property
-    def program_definition(self):
-        return self._program_definition
+    def show_definition(self):
+        return self._show_definition
 
     @property
-    def program_img(self):
-        return self._program_img
+    def show_img(self):
+        return self._show_img
 
     @property
-    def program_start_dt(self):
-        return self._program_start_dt
+    def show_start_dt(self):
+        return self._show_start_dt
 
     @property
-    def program_duration(self):
-        return self._program_duration
+    def show_duration(self):
+        return self._show_duration
     
     @property
-    def program_position(self):
-        return self._program_position
+    def show_position(self):
+        return self._show_position
 
     @property
     def is_on(self):
