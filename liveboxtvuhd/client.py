@@ -64,7 +64,8 @@ class LiveboxTvUhdClient(object):
         self._channel_id = _data["playedMediaId"]
         
         # If a channel is displayed
-        if self._channel_id and self.channel_id != 'NA':
+        #if self._channel_id and self.channel_id != 'NA':
+        if self._channel_id and self.get_channel_from_epg_id(self._channel_id):
 
             # We should update all information only if channel or show change
             if self._channel_id != self._last_channel_id or self._show_position > self._show_duration:
@@ -87,7 +88,7 @@ class LiveboxTvUhdClient(object):
             d = dt_util.utcnow()
             self._show_position = calendar.timegm(d.utctimetuple()) - self._show_start_dt
         else:
-            # No channel displayed. Should be HOMEPAGE, NETFLIX, WHATEVER...
+            # Unknow or no channel displayed. Should be HOMEPAGE, NETFLIX, WHATEVER...
             self._channel_id = -1
             self._channel_name = self._osd_context.upper()
             self._show_title = None
@@ -126,7 +127,6 @@ class LiveboxTvUhdClient(object):
 
     @property
     def channel_name(self):
-        #self.update()
         return self._channel_name
 
     @channel_name.setter

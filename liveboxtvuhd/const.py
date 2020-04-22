@@ -29,9 +29,8 @@ KEYS = {
     "VOD": 393,
 }
 
-
 CHANNELS = [
-    {"index": "-1","epg_id": "-1",   "name": "N/A"},
+    {"index": "-1",  "epg_id": "-1",   "name": "N/A"},
     {"index": "1",   "epg_id": "192",  "name": "TF1"},
     {"index": "2",   "epg_id": "4",    "name": "FRANCE 2"},
     {"index": "3",   "epg_id": "80",   "name": "FRANCE 3"},
@@ -54,11 +53,11 @@ CHANNELS = [
     {"index": "317", "epg_id": "651",  "name": "FRANCE 3 MIDI-PYRENEES"},
     {"index": "318", "epg_id": "644",  "name": "FRANCE 3 NORD PAS DE CALAIS"},
     {"index": "319", "epg_id": "313",  "name": "FRANCE 3 PARIS IDF"},
-    {"index": "3",   "epg_id": "635",  "name": "FRANCE 3"},
-    {"index": "3",   "epg_id": "639",  "name": "FRANCE 3"},
-    {"index": "3",   "epg_id": "643",  "name": "FRANCE 3"},
-    {"index": "3",   "epg_id": "645",  "name": "FRANCE 3"},
-    {"index": "3",   "epg_id": "648",  "name": "FRANCE 3"},
+    {"index": "320", "epg_id": "635",  "name": "FRANCE 3 PAYS DE LA LOIRE"},
+    {"index": "321", "epg_id": "645",  "name": "FRANCE 3 PICARDIE"},
+    {"index": "322", "epg_id": "639",  "name": "FRANCE 3 POITOU CHARENTES"},
+    {"index": "323", "epg_id": "643",  "name": "FRANCE 3 PACA"},
+    {"index": "324", "epg_id": "648",  "name": "FRANCE 3 RHONES ALPES"},
     {"index": "4",   "epg_id": "34",   "name": "CANAL+"},
     {"index": "5",   "epg_id": "47",   "name": "FRANCE 5"},
     {"index": "6",   "epg_id": "118",  "name": "M6"},
