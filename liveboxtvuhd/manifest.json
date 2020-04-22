@@ -1,0 +1,8 @@
+{
+  "domain": "liveboxplaytv",
+  "name": "Orange Livebox Play TV",
+  "documentation": "https://www.home-assistant.io/integrations/liveboxplaytv",
+  "requirements": [],
+  "dependencies": [],
+  "codeowners": ["@pschmitt"]
+}
