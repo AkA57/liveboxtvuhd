@@ -90,6 +90,11 @@ class LiveboxTvUhdClient(object):
             # No channel displayed. Should be HOMEPAGE, NETFLIX, WHATEVER...
             self._channel_id = -1
             self._channel_name = self._osd_context.upper()
+            self._program_title = None
+            self._program_definition = None
+            self._program_img = None
+            self._program_start_dt = 0
+            self._program_duration = 0
         return _data
         
 
