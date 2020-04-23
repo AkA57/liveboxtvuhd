@@ -1,8 +1,9 @@
-# liveboxtvuhd
+# Livebox TV UHD
 
-This is a custom component to allow control of Livebox UHD TV in [Homeassistant](https://home-assistant.io).
+This is a custom component to allow control of Livebox TV UHD in [Homeassistant](https://home-assistant.io).
 
-- Play/Pause/
+- Power On/Off
+- Play/Pause
 - Next/Previous (Track)
 - Volume
 - Channel source
@@ -11,10 +12,14 @@ This is a custom component to allow control of Livebox UHD TV in [Homeassistant]
   - Show
   - Show background image
   - Show time
-## 
-
 
 ## Installation 
+
+**Recommanded**
+
+Use [HACS](https://hacs.xyz/).
+
+**Manual**
 
 1. Using the tool of choice open the directory (folder) for your HA configuration (where you find `configuration.yaml`).
 2. If you do not have a `custom_components` directory (folder) there, you need to create it.

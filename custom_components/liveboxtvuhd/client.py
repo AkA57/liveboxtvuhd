@@ -21,7 +21,7 @@ OPERATION_CHANNEL_CHANGE = 9
 OPERATION_KEYPRESS = 1
 URL_EPG = 'https://rp-live-pc.woopic.com/live-webapp/v3/applications/PC/programs'
 
-__version__ = '0.0.2'
+__version__ = '0.0.3'
 
 class LiveboxTvUhdClient(object):
     def __init__(self, hostname, port=8080, timeout=3, refresh_frequency=60):
@@ -78,7 +78,7 @@ class LiveboxTvUhdClient(object):
                 resp.raise_for_status()
                 _data2 =  resp.json()
                 _LOGGER.debug(str(_data2))
-                if _data2:
+                if _data2[self._channel_id]:
                     self._show_title = _data2[self._channel_id][0]["title"]
                     self._show_definition = _data2[self._channel_id][0]["definition"]
                     self._show_start_dt = _data2[self._channel_id][0]["diffusionDate"]
