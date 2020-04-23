@@ -44,9 +44,9 @@ Name|Required|Description
 ## Examples
 With mini-media-player:
 
-![Example](https://github.com/AkA57/liveboxtvuhd/blob/master/liveboxtvuhd.PNG)
+![Example](https://github.com/AkA57/liveboxtvuhd/blob/dev/screenshot/example.png)
 
 With standard media-player 
 
-![Example](https://github.com/AkA57/liveboxtvuhd/blob/master/liveboxtvuhd2.PNG)
+![Example](https://github.com/AkA57/liveboxtvuhd/blob/dev/screenshot/example2.png)
 
