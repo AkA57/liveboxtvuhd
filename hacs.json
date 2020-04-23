@@ -1,0 +1,7 @@
+{
+    "name": "liveboxtvuhd",
+    "hacs": "0.24.0",
+    "domains": [ "media_player" ],
+    "iot_class": "Local Polling",
+    "homeassistant": "0.108.0"
+}

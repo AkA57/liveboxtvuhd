@@ -2,7 +2,10 @@
   "domain": "liveboxtvuhd",
   "name": "Orange Livebox TV UHD",
   "documentation": "https://github.com/AkA57/liveboxtvuhd",
-  "requirements": [],
   "dependencies": [],
-  "codeowners": ["@AkA57"]
+  "config_flow": false,
+  "codeowners": [
+    "@AkA57"
+  ],
+  "requirements": []
 }

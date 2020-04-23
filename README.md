@@ -1,16 +1,31 @@
 # liveboxtvuhd
 
-Ce module permet de contrôler le décodeur TV UHD 4K Orange depuis Home Assistant (https://www.home-assistant.io/). 
+This is a custom component to allow control of Livebox UHD TV in [Homeassistant](https://home-assistant.io).
 
-Développé et testé pour le décodeur TV UHD 4K Orange Fibre.
+- Play/Pause/
+- Next/Previous (Track)
+- Volume
+- Channel source
+- Retrieval for displaying in home assistant of:
+  - Channel name
+  - Show
+  - Show background image
+  - Show time
+## 
 
 
-## Installation
+## Installation 
 
-1. Télécharger le dossier **liveboxtvuhd** et placer le placer dans le répertoire **custom_compoment** de Home Assistant.
+1. Using the tool of choice open the directory (folder) for your HA configuration (where you find `configuration.yaml`).
+2. If you do not have a `custom_components` directory (folder) there, you need to create it.
+3. In the `custom_components` directory (folder) create a new folder called `liveboxtvuhd`.
+4. Download _all_ the files from the `custom_components/liveboxtvuhd/` directory (folder) in this repository.
+5. Place the files you downloaded in the new directory (folder) you created.
+6. Restart Home Assistant
 
-2. Editez le fichier **configuration.yaml** et ajouter un media_player.
+## Configuration
 
+Edit `configuration.yaml` and add `liveboxtvuhd` as a new `media_player`
 
 ```yaml
 media_player:
@@ -20,12 +35,18 @@ media_player:
     scan_interval: 30
 ```
 
-## Exemples
-Avec mini-media-player:
+Name|Required|Description
+--|--|--
+`name`|no|Friendly name
+`host`|yes|Host or ip address 
+`scan_interval`|no|Time between scan in seconds
+
+## Examples
+With mini-media-player:
 
 ![Example](https://github.com/AkA57/liveboxtvuhd/blob/master/liveboxtvuhd.PNG)
 
-Avec le media-player standard
+With standard media-player 
 
 ![Example](https://github.com/AkA57/liveboxtvuhd/blob/master/liveboxtvuhd2.PNG)
 
