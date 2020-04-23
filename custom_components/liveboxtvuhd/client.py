@@ -21,7 +21,7 @@ OPERATION_CHANNEL_CHANGE = 9
 OPERATION_KEYPRESS = 1
 URL_EPG = 'https://rp-live-pc.woopic.com/live-webapp/v3/applications/PC/programs'
 
-__version__ = '0.0.2'
+__version__ = '0.0.3'
 
 class LiveboxTvUhdClient(object):
     def __init__(self, hostname, port=8080, timeout=3, refresh_frequency=60):

@@ -1,5 +1,5 @@
 {
-    "name": "liveboxtvuhd",
+    "name": "Livebox TV UHD",
     "hacs": "0.24.0",
     "domains": [ "media_player" ],
     "iot_class": "Local Polling",
