@@ -78,7 +78,7 @@ class LiveboxTvUhdClient(object):
                 resp.raise_for_status()
                 _data2 =  resp.json()
                 _LOGGER.debug(str(_data2))
-                if _data2:
+                if _data2[self._channel_id]:
                     self._show_title = _data2[self._channel_id][0]["title"]
                     self._show_definition = _data2[self._channel_id][0]["definition"]
                     self._show_start_dt = _data2[self._channel_id][0]["diffusionDate"]
