@@ -68,12 +68,15 @@ class LiveboxTvUhdClient(object):
             self._standby_state = _data["activeStandbyState"]
             self._osd_context = _data["osdContext"] 
             self._wol_support = _data["wolSupport"]
-            
-            if _data["playedMediaState"]:
-                self._media_state = _data["playedMediaState"]            
-            if _data["playedMediaId"]:
+
+            self._channel_id = None          
+            self._media_state = "UNKNOW"
+            if "playedMediaState" in _data:
+                self._media_state = _data["playedMediaState"]
+
+            if "playedMediaId" in _data:
                 self._channel_id = _data["playedMediaId"]
-        
+
         # If a channel is displayed
         if self._channel_id and self.get_channel_from_epg_id(self._channel_id):
 
@@ -122,6 +125,7 @@ class LiveboxTvUhdClient(object):
         else:
             # Unknow or no channel displayed. Should be HOMEPAGE, NETFLIX, WHATEVER...
             self._channel_id = -1
+            self._last_channel_id = self._channel_id
             self._media_type = MEDIA_TYPE_CHANNEL
             self._channel_name = self._osd_context.upper()
             self._show_title = None
@@ -155,7 +159,6 @@ class LiveboxTvUhdClient(object):
 
     @property
     def media_state(self):
-        self.update()
         return self._media_state
 
     @property

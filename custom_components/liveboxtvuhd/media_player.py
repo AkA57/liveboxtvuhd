@@ -110,6 +110,7 @@ class LiveboxTvUhdDevice(MediaPlayerDevice):
     async def async_update(self):
         """Retrieve the latest data."""
         try:
+            await self.hass.async_add_executor_job(self.refresh_livebox_data)
             self._state = self.refresh_state()
             self._media_type = self._client.media_type
             self.refresh_channel_list()
@@ -221,6 +222,9 @@ class LiveboxTvUhdDevice(MediaPlayerDevice):
         for channel in self._client.get_channels():
             new_channel_list[int(channel["index"])] = channel["name"]
         self._channel_list = new_channel_list
+
+    def refresh_livebox_data(self):
+        info = self._client.info
 
     def refresh_state(self):
         """Refresh the current media state."""
