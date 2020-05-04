@@ -9,6 +9,7 @@ import voluptuous as vol
 from homeassistant.components.media_player import PLATFORM_SCHEMA, MediaPlayerDevice
 from homeassistant.components.media_player.const import (
     MEDIA_TYPE_CHANNEL,
+    MEDIA_TYPE_TVSHOW,
     SUPPORT_NEXT_TRACK,
     SUPPORT_PAUSE,
     SUPPORT_PLAY,
@@ -97,26 +98,38 @@ class LiveboxTvUhdDevice(MediaPlayerDevice):
         self._current_channel = None
         self._current_show = None
         self._media_duration = None
-        self._media_remaining_time = None
+        self._media_position = None
         self._media_image_url = None
         self._media_last_updated = None
+        self._media_series_title = None
+        self._media_season = None
+        self._media_episode = None
+        self._media_type = MEDIA_TYPE_CHANNEL
+
 
     async def async_update(self):
         """Retrieve the latest data."""
-
         try:
+            await self.hass.async_add_executor_job(self.refresh_livebox_data)
             self._state = self.refresh_state()
-            # Update channel list
+            self._media_type = self._client.media_type
             self.refresh_channel_list()
-            # Update current channel
             channel = self._client.channel_name
             if channel is not None:
                 self._current_channel = channel
                 self._current_show = self._client.show_title
                 self._media_duration = self._client.show_duration
                 self._media_image_url = self._client.show_img
-                self._media_remaining_time =  self._client.show_position
+                self._media_position =  self._client.show_position
                 self._media_last_updated = dt_util.utcnow()
+                if self._media_type == MEDIA_TYPE_TVSHOW:
+                    self._media_series_title = self._client.show_series_title
+                    self._media_season = self._client.show_season
+                    self._media_episode = self._client.show_episode
+                else:
+                    self._media_series_title = None
+                    self._media_season = None
+                    self._media_episode = None
         except requests.ConnectionError:
             self._state = None
 
@@ -149,8 +162,7 @@ class LiveboxTvUhdDevice(MediaPlayerDevice):
     @property
     def media_content_type(self):
         """Content type of current playing media."""
-        # return self._client.media_type
-        return MEDIA_TYPE_CHANNEL
+        return self._client.media_type
 
     @property
     def media_image_url(self):
@@ -166,6 +178,21 @@ class LiveboxTvUhdDevice(MediaPlayerDevice):
             return self._current_channel
 
     @property
+    def media_series_title(self):
+        """Title of series of current playing media, TV show only."""
+        return self._media_series_title
+
+    @property
+    def media_season(self):
+        """Season of current playing media, TV show only."""
+        return self._media_season
+
+    @property
+    def media_episode(self):
+        """Episode of current playing media, TV show only."""
+        return self._media_episode
+
+    @property
     def media_duration(self):
         """Duration of current playing media in seconds."""
         return self._media_duration
@@ -173,7 +200,7 @@ class LiveboxTvUhdDevice(MediaPlayerDevice):
     @property
     def media_position(self):
         """Position of current playing media in seconds."""
-        return self._media_remaining_time
+        return self._media_position
 
     @property
     def media_position_updated_at(self):
@@ -195,6 +222,9 @@ class LiveboxTvUhdDevice(MediaPlayerDevice):
         for channel in self._client.get_channels():
             new_channel_list[int(channel["index"])] = channel["name"]
         self._channel_list = new_channel_list
+
+    def refresh_livebox_data(self):
+        info = self._client.info
 
     def refresh_state(self):
         """Refresh the current media state."""
@@ -255,3 +285,6 @@ class LiveboxTvUhdDevice(MediaPlayerDevice):
     def media_previous_track(self):
         """Send the previous track command."""
         self._client.channel_down()
+
+
+    

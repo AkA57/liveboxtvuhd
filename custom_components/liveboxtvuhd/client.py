@@ -13,7 +13,10 @@ import calendar
 from fuzzywuzzy import process
 from .const import CHANNELS
 from .const import KEYS
-
+from homeassistant.components.media_player.const import (
+    MEDIA_TYPE_CHANNEL,
+    MEDIA_TYPE_TVSHOW,
+)
 
 _LOGGER = logging.getLogger(__name__)
 OPERATION_INFORMATION = 10
@@ -35,8 +38,12 @@ class LiveboxTvUhdClient(object):
         self._standby_state = False
         self._channel_id = None
         self._osd_context = None
-        self._media_state = None
         self._wol_support = None
+        self._media_state = None
+        self._media_type = None
+        self._show_series_title = None
+        self._show_season = None
+        self._show_episode = None
         # data from woopic.com
         self._channel_name = None
         self._show_title = None
@@ -57,48 +64,79 @@ class LiveboxTvUhdClient(object):
         resp.raise_for_status()
 
         _data = resp.json()["result"]["data"]
-        self._standby_state = _data["activeStandbyState"]
-        self._osd_context = _data["osdContext"] 
-        self._media_state = _data["playedMediaState"]
-        self._wol_support = _data["wolSupport"]
-        self._channel_id = _data["playedMediaId"]
-        
+        if _data:
+            self._standby_state = _data["activeStandbyState"]
+            self._osd_context = _data["osdContext"] 
+            self._wol_support = _data["wolSupport"]
+
+            self._channel_id = None          
+            self._media_state = "UNKNOW"
+            if "playedMediaState" in _data:
+                self._media_state = _data["playedMediaState"]
+
+            if "playedMediaId" in _data:
+                self._channel_id = _data["playedMediaId"]
+
         # If a channel is displayed
-        #if self._channel_id and self.channel_id != 'NA':
         if self._channel_id and self.get_channel_from_epg_id(self._channel_id):
 
             # We should update all information only if channel or show change
-            if self._channel_id != self._last_channel_id or self._show_position > self._show_duration:
+            if self._channel_id != self._last_channel_id or self._show_position > self._show_duration: 
                 self._last_channel_id = self._channel_id
                 self._channel_name = self.get_channel_from_epg_id(self._channel_id)["name"]
 
+                # Reset everything
+                self._show_series_title = None
+                self._show_season = None
+                self._show_episode = None
+                self._show_title = None
+                self._show_img = None
+                self._show_position = 0
+                self._show_start_dt = 0
+
                 # get information from EPG
                 get_params = OrderedDict({"groupBy": "channel", "period": "current", "epgIds": self._channel_id, "mco": "OFR"})
-                resp = requests.get(URL_EPG, params=get_params, timeout=self.timeout)
-                resp.raise_for_status()
-                _data2 =  resp.json()
-                _LOGGER.debug(str(_data2))
-                if _data2[self._channel_id]:
-                    self._show_title = _data2[self._channel_id][0]["title"]
+                respepg = requests.get(URL_EPG, params=get_params, timeout=self.timeout)
+                _data2 =  respepg.json()
+                
+                if respepg.status_code == 200 and _data2[self._channel_id]:
+                    # Show title depending of programType
+                    if _data2[self._channel_id][0]["programType"] == "EPISODE":
+                        self._media_type = MEDIA_TYPE_TVSHOW
+                        self._show_series_title = _data2[self._channel_id][0]["title"]
+                        self._show_season = _data2[self._channel_id][0]["season"]["number"]
+                        self._show_episode = _data2[self._channel_id][0]["episodeNumber"]
+                        self._show_title = _data2[self._channel_id][0]["season"]["serie"]["title"]
+                    else:
+                        self._media_type = MEDIA_TYPE_CHANNEL                    
+                        self._show_title = _data2[self._channel_id][0]["title"]
+
+
                     self._show_definition = _data2[self._channel_id][0]["definition"]
                     self._show_start_dt = _data2[self._channel_id][0]["diffusionDate"]
                     self._show_duration = _data2[self._channel_id][0]["duration"]
                     if _data2[self._channel_id][0]["covers"]:
                         self._show_img = _data2[self._channel_id][0]["covers"][1]["url"]
-                    else:
-                        self._show_img = None
 
-            d = dt_util.utcnow()
-            self._show_position = calendar.timegm(d.utctimetuple()) - self._show_start_dt
+            # update position if we have show information
+            if self._show_start_dt > 0: 
+                d = dt_util.utcnow()
+                self._show_position = calendar.timegm(d.utctimetuple()) - self._show_start_dt
         else:
             # Unknow or no channel displayed. Should be HOMEPAGE, NETFLIX, WHATEVER...
             self._channel_id = -1
+            self._last_channel_id = self._channel_id
+            self._media_type = MEDIA_TYPE_CHANNEL
             self._channel_name = self._osd_context.upper()
+            self._show_title = None
+            self._show_season = None
+            self._show_episode = None
             self._show_title = None
             self._show_definition = None
             self._show_img = None
             self._show_start_dt = 0
             self._show_duration = 0
+            self._show_position = 0
         return _data
         
 
@@ -121,9 +159,24 @@ class LiveboxTvUhdClient(object):
 
     @property
     def media_state(self):
-        self.update()
         return self._media_state
-    
+
+    @property
+    def media_type(self):
+        return self._media_type
+
+    @property
+    def show_series_title(self):
+        return self._show_series_title
+
+    @property
+    def show_season(self):
+        return self._show_season
+
+    @property
+    def show_episode(self):
+        return self._show_episode
+
     @property
     def wol_support(self):
         return self._wol_support == "0"
