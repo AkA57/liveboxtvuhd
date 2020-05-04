@@ -51,6 +51,7 @@ Name|Required|Description
 With mini-media-player:
 
 ![Example](https://github.com/AkA57/liveboxtvuhd/blob/dev/screenshot/example.png)
+![Example](https://github.com/AkA57/liveboxtvuhd/blob/dev/screenshot/example4.png)
 
 With standard media-player 
 
