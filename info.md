@@ -4,7 +4,7 @@ This is a custom component to allow control of Livebox TV UHD in [Homeassistant]
 
 - Power On/Off
 - Play/Pause
-- Next/Previous (Track)
+- Next/Previous (Channel)
 - Volume
 - Channel source
 - Retrieval for displaying in home assistant of:
@@ -12,6 +12,7 @@ This is a custom component to allow control of Livebox TV UHD in [Homeassistant]
   - Show
   - Show background image
   - Show time
+  - Serie title, season and episode (v0.0.5)
 
 ## Installation 
 
@@ -37,7 +38,7 @@ media_player:
   - platform: liveboxtvuhd
     name: Livebox
     host: 192.168.1.2
-    scan_interval: 30
+    scan_interval: 10
 ```
 
 Name|Required|Description
@@ -54,4 +55,5 @@ With mini-media-player:
 With standard media-player 
 
 ![Example](https://github.com/AkA57/liveboxtvuhd/blob/dev/screenshot/example2.png)
+![Example](https://github.com/AkA57/liveboxtvuhd/blob/dev/screenshot/example3.png)
 
