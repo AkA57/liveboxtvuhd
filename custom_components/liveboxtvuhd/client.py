@@ -19,12 +19,12 @@ from homeassistant.components.media_player.const import (
 )
 
 _LOGGER = logging.getLogger(__name__)
-OPERATION_INFORMATION = 10
-OPERATION_CHANNEL_CHANGE = 9
-OPERATION_KEYPRESS = 1
+OPERATION_INFORMATION = '10'
+OPERATION_CHANNEL_CHANGE = '09'
+OPERATION_KEYPRESS = '01'
 URL_EPG = 'https://rp-live-pc.woopic.com/live-webapp/v3/applications/PC/programs'
 
-__version__ = '0.0.3'
+__version__ = '0.0.6'
 
 class LiveboxTvUhdClient(object):
     def __init__(self, hostname, port=8080, timeout=3, refresh_frequency=60):
