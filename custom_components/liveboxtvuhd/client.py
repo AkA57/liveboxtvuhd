@@ -54,7 +54,6 @@ class LiveboxTvUhdClient(object):
         self._show_position = 0
         self._last_channel_id = None
         self._cache_channel_img = {}
-        assert isinstance(self.info, dict), "Failed to retrive info from {}".format(self.hostname)        
 
     def update(self):
         _LOGGER.debug("Refresh Orange API data")
@@ -232,7 +231,7 @@ class LiveboxTvUhdClient(object):
     def turn_on(self):
         if not self.standby_state:
             self.press_key(key=KEYS["POWER"])
-            time.sleep(0.8)
+            time.sleep(2)
             self.press_key(key=KEYS["OK"])
 
     def turn_off(self):
