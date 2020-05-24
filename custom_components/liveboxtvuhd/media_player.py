@@ -6,7 +6,7 @@ from .client import LiveboxTvUhdClient
 import requests
 import voluptuous as vol
 
-from homeassistant.components.media_player import PLATFORM_SCHEMA, MediaPlayerDevice
+from homeassistant.components.media_player import PLATFORM_SCHEMA, MediaPlayerEntity
 from homeassistant.components.media_player.const import (
     MEDIA_TYPE_CHANNEL,
     MEDIA_TYPE_TVSHOW,
@@ -82,7 +82,7 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
     async_add_entities(livebox_devices, True)
 
 
-class LiveboxTvUhdDevice(MediaPlayerDevice):
+class LiveboxTvUhdDevice(MediaPlayerEntity):
     """Representation of an Orange Livebox TV UHD."""
 
     def __init__(self, host, port, name):
