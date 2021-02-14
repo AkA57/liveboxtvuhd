@@ -43,7 +43,7 @@ media_player:
 ```
 
 Name|Required|Description|Default
---|--|--
+--|--|--|--
 `name`|no|Friendly name|liveboxtvuhd
 `host`|yes|Host or ip address| 
 `port`|no|port|8080 
