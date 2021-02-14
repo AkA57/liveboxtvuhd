@@ -60,7 +60,6 @@ type: 'custom:mini-media-player'
 entity: media_player.livebox
 artwork: full-cover
 volume_stateless: true
-toggle_power: true
 ```
 
 
