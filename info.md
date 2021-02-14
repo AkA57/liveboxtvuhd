@@ -5,7 +5,7 @@ This is a custom component to allow control of Livebox TV UHD in [Homeassistant]
 - Power On/Off
 - Play/Pause
 - Next/Previous (Channel)
-- Volume
+- Volume (+/-/mute)
 - Channel source
 - Retrieval for displaying in home assistant of:
   - Channel name
