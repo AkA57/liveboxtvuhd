@@ -9,6 +9,7 @@ import requests
 import time
 import homeassistant.util.dt as dt_util
 import calendar
+import os
 
 from fuzzywuzzy import process
 from .const import CHANNELS
@@ -133,6 +134,8 @@ class LiveboxTvUhdClient(object):
             self._show_title = None
             self._show_definition = None
             self._show_img = None
+            if os.path.isfile('./cover/{}.png'.format(self.channel_name)):
+                 self._show_img = './cover/{}.png'.format(self.channel_name)
             self._show_start_dt = 0
             self._show_duration = 0
             self._show_position = 0
