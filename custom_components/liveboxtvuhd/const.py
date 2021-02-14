@@ -8,7 +8,7 @@ STARTUP = """
 -------------------------------------------------------------------
 {}
 Version: {}
-This is a custom component
+This is a custom integration.
 If you have any issues with this you need to open an issue here:
 {}
 -------------------------------------------------------------------
