@@ -36,16 +36,18 @@ Edit `configuration.yaml` and add `liveboxtvuhd` as a new `media_player`
 ```yaml
 media_player:
   - platform: liveboxtvuhd
-    name: Livebox
+    name: livebox
     host: 192.168.1.2
+    port: 8080
     scan_interval: 10
 ```
 
-Name|Required|Description
+Name|Required|Description|Default
 --|--|--
-`name`|no|Friendly name
-`host`|yes|Host or ip address 
-`scan_interval`|no|Time between scan in seconds
+`name`|no|Friendly name|liveboxtvuhd
+`host`|yes|Host or ip address| 
+`port`|no|port|8080 
+`scan_interval`|no|Time between scan in seconds|10
 
 ## Examples
 With mini-media-player:
