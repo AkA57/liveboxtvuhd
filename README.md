@@ -46,7 +46,7 @@ Name|Required|Description|Default
 --|--|--|--
 `name`|no|Friendly name|liveboxtvuhd
 `host`|yes|Host or ip address| 
-`port`|no|port|8080 
+`port`|no|port number|8080 
 `scan_interval`|no|Time between scan in seconds|10
 
 ## Examples
