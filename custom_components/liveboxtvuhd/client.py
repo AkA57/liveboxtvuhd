@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 # coding: utf-8
-
-
 from collections import OrderedDict
 import json
 import logging
@@ -58,12 +56,8 @@ class LiveboxTvUhdClient(object):
 
     def update(self):
         _LOGGER.debug("Refresh Orange API data")
-        url = "http://{}:{}/remoteControl/cmd".format(self.hostname, self.port)
-        get_params = OrderedDict({"operation": OPERATION_INFORMATION})
-        resp = requests.get(url, params=get_params, timeout=self.timeout)
-        resp.raise_for_status()
+        _data = self.rq_livebox(OPERATION_INFORMATION)["result"]["data"]
 
-        _data = resp.json()["result"]["data"]
         if _data:
             self._standby_state = _data["activeStandbyState"]
             self._osd_context = _data["osdContext"] 
@@ -94,12 +88,10 @@ class LiveboxTvUhdClient(object):
                 self._show_position = 0
                 self._show_start_dt = 0
 
-                # get information from EPG
-                get_params = OrderedDict({"groupBy": "channel", "period": "current", "epgIds": self._channel_id, "mco": "OFR"})
-                respepg = requests.get(URL_EPG, params=get_params, timeout=self.timeout)
-                _data2 =  respepg.json()
+                # Get EPG information
+                _data2 =  self.rq_epg(self._channel_id)
                 
-                if respepg.status_code == 200 and _data2[self._channel_id]:
+                if _data2 != None and _data2[self._channel_id]:
                     # Show title depending of programType
                     if _data2[self._channel_id][0]["programType"] == "EPISODE":
                         self._media_type = MEDIA_TYPE_TVSHOW
@@ -134,8 +126,6 @@ class LiveboxTvUhdClient(object):
             self._show_title = None
             self._show_definition = None
             self._show_img = None
-            if os.path.isfile('./cover/{}.png'.format(self.channel_name)):
-                 self._show_img = './cover/{}.png'.format(self.channel_name)
             self._show_start_dt = 0
             self._show_duration = 0
             self._show_position = 0
@@ -257,7 +247,7 @@ class LiveboxTvUhdClient(object):
             assert key in KEYS, "No such key: {}".format(key)
             key = KEYS[key]
         _LOGGER.info("Press key %s", self.__get_key_name(key))
-        return self.rq(OPERATION_KEYPRESS, OrderedDict([("key", key), ("mode", mode)]))
+        return self.rq_livebox(OPERATION_KEYPRESS, OrderedDict([("key", key), ("mode", mode)]))
 
     def volume_up(self):
         return self.press_key(key=KEYS["VOL+"])
@@ -318,24 +308,52 @@ class LiveboxTvUhdClient(object):
     def set_channel_by_id(self, epg_id):
         # The EPG ID needs to be 10 chars long, padded with '*' chars
         epg_id_str = str(epg_id).rjust(10, "*")
-        _LOGGER.info("Tune to %s", self.get_channel_from_epg_id(epg_id)["name"])
-        _LOGGER.debug("EPG ID string: %s", epg_id_str)
-        url = "http://{}:{}/remoteControl/cmd?operation=09&epg_id={}&uui=1".format(
-            self.hostname, self.port, epg_id_str
-        )
-        resp = requests.get(url, timeout=self.timeout)
-        resp.raise_for_status()
-        return resp.json()
+        _LOGGER.debug("Tune to channel %s, epg_id %s", self.get_channel_from_epg_id(epg_id)["name"], epg_id_str)
+        return self.rq_livebox(OPERATION_CHANNEL_CHANGE, OrderedDict([("epg_id", epg_id_str), ("uui", "1")]))
 
     def set_channel_by_name(self, channel):
         epg_id = self.get_channel_id_from_name(channel)
         return self.set_channel_by_id(epg_id)
 
-    def rq(self, operation, params=None):
+    def rq_livebox(self, operation, params=None):
         url = "http://{}:{}/remoteControl/cmd".format(self.hostname, self.port)
         get_params = OrderedDict({"operation": operation})
+        _LOGGER.debug("Request Livebox operation %s", operation)
         if params:
             get_params.update(params)
-        resp = requests.get(url, params=get_params, timeout=self.timeout)
-        resp.raise_for_status()
-        return resp.json()
+        try:
+            r = requests.get(url, params=get_params, timeout=self.timeout)
+            r.raise_for_status()
+            return r.json()
+        except requests.exceptions.RequestException as err:
+            raise SystemExit(err)
+        except requests.exceptions.HTTPError as errh:
+            raise SystemExit(errh)
+        except requests.exceptions.ConnectionError as errc:
+            raise SystemExit(errc)
+        except requests.exceptions.Timeout as errt:
+            raise SystemExit(errt)            
+
+    def rq_epg(self, channel_id):
+        get_params = OrderedDict({"groupBy": "channel", "period": "current", "epgIds": channel_id, "mco": "OFR"})
+        _LOGGER.debug("Request EPG channel id %s", channel_id)
+        try:
+            r = requests.get(URL_EPG, params=get_params, timeout=self.timeout)
+            r.raise_for_status()
+            return r.json()
+        except requests.exceptions.RequestException as err:
+            pass
+        except requests.exceptions.HTTPError as errh:
+            pass
+        except requests.exceptions.ConnectionError as errc:
+            pass
+        except requests.exceptions.Timeout as errt:
+            pass
+
+
+
+
+           
+            
+            
+

@@ -135,13 +135,14 @@ class LiveboxTvUhdDevice(MediaPlayerEntity):
                     self._media_series_title = None
                     self._media_season = None
                     self._media_episode = None
-        except requests.ConnectionError:
+        except requests.ConnectionError as ce: 
             self._state = None
             _LOGGER.error(
                 "Failed to connect to Livebox TV UHD at %s:%s. "
-                "Please check your configuration.yaml.",
+                "Please check your configuration.yaml. (%s)",
                 self._client.hostname,
                 self._client.port,
+                ce,
             )
     @property
     def name(self):

@@ -12,7 +12,7 @@ This is a custom component to allow control of Livebox TV UHD in [Homeassistant]
   - Show
   - Show background image
   - Show time
-  - Serie title, season and episode (v0.0.5)
+  - Serie title, season and episode
 
 ## Installation 
 
