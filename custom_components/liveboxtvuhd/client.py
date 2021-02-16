@@ -56,7 +56,13 @@ class LiveboxTvUhdClient(object):
 
     def update(self):
         _LOGGER.debug("Refresh Orange API data")
-        _data = self.rq_livebox(OPERATION_INFORMATION)["result"]["data"]
+        _data = None
+        _datalivebox = self.rq_livebox(OPERATION_INFORMATION)
+        if _datalivebox:
+            _data = _datalivebox["result"]["data"]
+        else:
+            self._osd_context = None
+            self._media_state = "UNKNOW"
 
         if _data:
             self._standby_state = _data["activeStandbyState"]
@@ -64,7 +70,7 @@ class LiveboxTvUhdClient(object):
             self._wol_support = _data["wolSupport"]
 
             self._channel_id = None          
-            self._media_state = "UNKNOW"
+            
             if "playedMediaState" in _data:
                 self._media_state = _data["playedMediaState"]
 
@@ -119,7 +125,8 @@ class LiveboxTvUhdClient(object):
             self._channel_id = -1
             self._last_channel_id = self._channel_id
             self._media_type = MEDIA_TYPE_CHANNEL
-            self._channel_name = self._osd_context.upper()
+            if self._osd_context:
+                self._channel_name = self._osd_context.upper()
             self._show_title = None
             self._show_season = None
             self._show_episode = None
@@ -324,15 +331,17 @@ class LiveboxTvUhdClient(object):
         try:
             r = requests.get(url, params=get_params, timeout=self.timeout)
             r.raise_for_status()
+            _LOGGER.debug("Livebox: %s", r.json())
             return r.json()
         except requests.exceptions.RequestException as err:
-            raise SystemExit(err)
+            _LOGGER.error(err)
         except requests.exceptions.HTTPError as errh:
-            raise SystemExit(errh)
+            _LOGGER.error(errh)
         except requests.exceptions.ConnectionError as errc:
-            raise SystemExit(errc)
+            _LOGGER.error(errc)
         except requests.exceptions.Timeout as errt:
-            raise SystemExit(errt)            
+            _LOGGER.error(errt)
+
 
     def rq_epg(self, channel_id):
         get_params = OrderedDict({"groupBy": "channel", "period": "current", "epgIds": channel_id, "mco": "OFR"})
@@ -340,6 +349,7 @@ class LiveboxTvUhdClient(object):
         try:
             r = requests.get(URL_EPG, params=get_params, timeout=self.timeout)
             r.raise_for_status()
+            _LOGGER.debug("EPG: %s", r.json())
             return r.json()
         except requests.exceptions.RequestException as err:
             pass

@@ -29,6 +29,7 @@ from homeassistant.const import (
     STATE_ON,
     STATE_PAUSED,
     STATE_PLAYING,
+    STATE_UNKNOWN,
 )
 import homeassistant.helpers.config_validation as cv
 import homeassistant.util.dt as dt_util
@@ -244,7 +245,8 @@ class LiveboxTvUhdDevice(MediaPlayerEntity):
             return STATE_PLAYING
         if state == "PAUSE":
             return STATE_PAUSED
-
+        if state == "UNKNOW":
+            return STATE_UNKNOWN
         return STATE_ON if self._client.is_on else STATE_OFF
 
     def turn_off(self):
