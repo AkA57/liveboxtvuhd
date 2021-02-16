@@ -57,19 +57,18 @@ class LiveboxTvUhdClient(object):
     def update(self):
         _LOGGER.debug("Refresh Orange API data")
         _data = None
+        self._osd_context = None
+        self._channel_id = None             
+
         _datalivebox = self.rq_livebox(OPERATION_INFORMATION)
         if _datalivebox:
             _data = _datalivebox["result"]["data"]
-        else:
-            self._osd_context = None
-            self._media_state = "UNKNOW"
+
 
         if _data:
             self._standby_state = _data["activeStandbyState"]
             self._osd_context = _data["osdContext"] 
-            self._wol_support = _data["wolSupport"]
-
-            self._channel_id = None          
+            self._wol_support = _data["wolSupport"]   
             
             if "playedMediaState" in _data:
                 self._media_state = _data["playedMediaState"]
