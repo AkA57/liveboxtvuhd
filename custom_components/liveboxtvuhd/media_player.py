@@ -24,6 +24,7 @@ from homeassistant.const import (
     CONF_HOST,
     CONF_NAME,
     CONF_PORT,
+    CONF_SCAN_INTERVAL,    
     STATE_OFF,
     STATE_ON,
     STATE_PAUSED,
@@ -31,13 +32,19 @@ from homeassistant.const import (
 )
 import homeassistant.helpers.config_validation as cv
 import homeassistant.util.dt as dt_util
+from .const import (
+    SCAN_INTERVAL,
+    MIN_TIME_BETWEEN_SCANS,
+    MIN_TIME_BETWEEN_FORCED_SCANS,
+    DEFAULT_NAME,
+    DEFAULT_PORT,
+)
+
 
 _LOGGER = logging.getLogger(__name__)
 
-DEFAULT_NAME = "Livebox TV UHD"
-DEFAULT_PORT = 8080
 
-SUPPORT_LIVEBOXPLAYTV = (
+SUPPORT_LIVEBOXUHD = (
     SUPPORT_TURN_OFF
     | SUPPORT_TURN_ON
     | SUPPORT_NEXT_TRACK
@@ -49,14 +56,12 @@ SUPPORT_LIVEBOXPLAYTV = (
     | SUPPORT_PLAY
 )
 
-MIN_TIME_BETWEEN_SCANS = timedelta(seconds=10)
-MIN_TIME_BETWEEN_FORCED_SCANS = timedelta(seconds=1)
-
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
     {
         vol.Required(CONF_HOST): cv.string,
         vol.Optional(CONF_PORT, default=DEFAULT_PORT): cv.port,
         vol.Optional(CONF_NAME, default=DEFAULT_NAME): cv.string,
+        vol.Optional(CONF_SCAN_INTERVAL, default=SCAN_INTERVAL): cv.time_period,        
     }
 )
 
@@ -115,6 +120,7 @@ class LiveboxTvUhdDevice(MediaPlayerEntity):
             self._media_type = self._client.media_type
             self.refresh_channel_list()
             channel = self._client.channel_name
+            _LOGGER.debug(channel)
             if channel is not None:
                 self._current_channel = channel
                 self._current_show = self._client.show_title
@@ -130,13 +136,14 @@ class LiveboxTvUhdDevice(MediaPlayerEntity):
                     self._media_series_title = None
                     self._media_season = None
                     self._media_episode = None
-        except requests.ConnectionError:
+        except requests.ConnectionError as ce: 
             self._state = None
             _LOGGER.error(
                 "Failed to connect to Livebox TV UHD at %s:%s. "
-                "Please check your configuration.yaml.",
+                "Please check your configuration.yaml. (%s)",
                 self._client.hostname,
                 self._client.port,
+                ce,
             )
     @property
     def name(self):
@@ -218,7 +225,7 @@ class LiveboxTvUhdDevice(MediaPlayerEntity):
     @property
     def supported_features(self):
         """Flag media player features that are supported."""
-        return SUPPORT_LIVEBOXPLAYTV
+        return SUPPORT_LIVEBOXUHD
 
     def refresh_channel_list(self):
         """Refresh the list of available channels."""
@@ -238,7 +245,6 @@ class LiveboxTvUhdDevice(MediaPlayerEntity):
             return STATE_PLAYING
         if state == "PAUSE":
             return STATE_PAUSED
-
         return STATE_ON if self._client.is_on else STATE_OFF
 
     def turn_off(self):
