@@ -7,5 +7,6 @@
   "codeowners": [
     "@AkA57"
   ],
-  "requirements": ["fuzzywuzzy==0.18.0"]
+  "requirements": ["fuzzywuzzy==0.18.0"],
+  "version": "1.0.0"
 }
