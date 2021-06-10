@@ -16,7 +16,8 @@ from .const import (
     OPERATION_INFORMATION,
     OPERATION_CHANNEL_CHANGE,
     OPERATION_KEYPRESS,
-    URL_EPG,
+    EPG_URL,
+    EPG_USER_AGENT,
 )
 from homeassistant.components.media_player.const import (
     MEDIA_TYPE_CHANNEL,
@@ -330,7 +331,7 @@ class LiveboxTvUhdClient(object):
         try:
             r = requests.get(url, params=get_params, timeout=self.timeout)
             r.raise_for_status()
-            _LOGGER.debug("Livebox: %s", r.json())
+            _LOGGER.debug("Livebox response: %s", r.json())
             return r.json()
         except requests.exceptions.RequestException as err:
             _LOGGER.error(err)
@@ -346,17 +347,22 @@ class LiveboxTvUhdClient(object):
         get_params = OrderedDict({"groupBy": "channel", "period": "current", "epgIds": channel_id, "mco": "OFR"})
         _LOGGER.debug("Request EPG channel id %s", channel_id)
         try:
-            r = requests.get(URL_EPG, params=get_params, timeout=self.timeout)
+            headers = {"User-Agent": EPG_USER_AGENT}
+            r = requests.get(EPG_URL, headers=headers, params=get_params, timeout=self.timeout)
             r.raise_for_status()
-            _LOGGER.debug("EPG: %s", r.json())
+            _LOGGER.debug("EPG response: %s", r.json())
             return r.json()
         except requests.exceptions.RequestException as err:
+            _LOGGER.error("EPG response: %s", err)
             pass
         except requests.exceptions.HTTPError as errh:
+            _LOGGER.error("EPG response: %s", errh)
             pass
         except requests.exceptions.ConnectionError as errc:
+            _LOGGER.error("EPG response: %s", errc)
             pass
         except requests.exceptions.Timeout as errt:
+            _LOGGER.error("EPG response: %s", errt)
             pass
 
 
