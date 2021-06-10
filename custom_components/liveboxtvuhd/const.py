@@ -1,5 +1,5 @@
 from datetime import timedelta
-__version__ = "1.0.1"
+__version__ = "1.0.2"
 PROJECT_URL = "https://github.com/AkA57/liveboxtvuhd/"
 ISSUE_URL = "{}issues".format(PROJECT_URL)
 
@@ -23,10 +23,14 @@ MIN_TIME_BETWEEN_FORCED_SCANS = timedelta(seconds=1)
 DEFAULT_NAME = "liveboxtvuhd"
 DEFAULT_PORT = 8080
 
+# Livebox operation
 OPERATION_INFORMATION = '10'
 OPERATION_CHANNEL_CHANGE = '09'
 OPERATION_KEYPRESS = '01'
-URL_EPG = 'https://rp-live-pc.woopic.com/live-webapp/v3/applications/PC/programs'
+
+# EPG
+EPG_URL = 'https://rp-live-pc.woopic.com/live-webapp/v3/applications/PC/programs'
+EPG_USER_AGENT = "Opera/9.80 (Linux i686; U; fr) Presto/2.10.287 Version/12.00 ; SC/IHD92 STB"
 
 
 KEYS = {
