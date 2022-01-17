@@ -10,14 +10,14 @@ import calendar
 import os
 
 from fuzzywuzzy import process
-from .const import CHANNELS
+# from .const import CHANNELS
 from .const import KEYS
 from .const import (
     OPERATION_INFORMATION,
     OPERATION_CHANNEL_CHANGE,
     OPERATION_KEYPRESS,
-    EPG_URL,
-    EPG_USER_AGENT,
+    # EPG_URL,
+    # EPG_USER_AGENT,
 )
 from homeassistant.components.media_player.const import (
     MEDIA_TYPE_CHANNEL,
@@ -27,10 +27,19 @@ from homeassistant.components.media_player.const import (
 _LOGGER = logging.getLogger(__name__)
 
 class LiveboxTvUhdClient(object):
-    def __init__(self, hostname, port=8080, timeout=3, refresh_frequency=60):
+    def __init__(self, hostname, port=8080, country="france", timeout=3, refresh_frequency=60):
         from datetime import timedelta
         self.hostname = hostname
         self.port = port
+        self.country = country
+        # import const for country
+        if self.country == "france":
+            from .const_france import (CHANNELS, EPG_URL, EPG_USER_AGENT)
+        elif self.country == "poland":
+            from .const_poland import (CHANNELS, EPG_URL, EPG_USER_AGENT)
+        self.channels = CHANNELS
+        self.epg_url = EPG_URL
+        self.epg_user_agent = EPG_USER_AGENT
         self.timeout = timeout
         self.refresh_frequency = timedelta(seconds=refresh_frequency)
         # data from livebox
@@ -95,26 +104,52 @@ class LiveboxTvUhdClient(object):
                 self._show_start_dt = 0
 
                 # Get EPG information
-                _data2 =  self.rq_epg(self._channel_id)
-                
-                if _data2 != None and _data2[self._channel_id]:
-                    # Show title depending of programType
-                    if _data2[self._channel_id][0]["programType"] == "EPISODE":
-                        self._media_type = MEDIA_TYPE_TVSHOW
-                        self._show_series_title = _data2[self._channel_id][0]["title"]
-                        self._show_season = _data2[self._channel_id][0]["season"]["number"]
-                        self._show_episode = _data2[self._channel_id][0]["episodeNumber"]
-                        self._show_title = _data2[self._channel_id][0]["season"]["serie"]["title"]
-                    else:
-                        self._media_type = MEDIA_TYPE_CHANNEL                    
-                        self._show_title = _data2[self._channel_id][0]["title"]
+                _data2 =  self.rq_epg(self._channel_id)               
+                if self.country == "france":
+                    if _data2 != None and _data2[self._channel_id]:
+
+                        # Show title depending of programType
+                        if _data2[self._channel_id][0]["programType"] == "EPISODE":
+                            self._media_type = MEDIA_TYPE_TVSHOW
+                            self._show_series_title = _data2[self._channel_id][0]["title"]
+                            self._show_season = _data2[self._channel_id][0]["season"]["number"]
+                            self._show_episode = _data2[self._channel_id][0]["episodeNumber"]
+                            self._show_title = _data2[self._channel_id][0]["season"]["serie"]["title"]
+                        else:
+                            self._media_type = MEDIA_TYPE_CHANNEL                    
+                            self._show_title = _data2[self._channel_id][0]["title"]
 
 
-                    self._show_definition = _data2[self._channel_id][0]["definition"]
-                    self._show_start_dt = _data2[self._channel_id][0]["diffusionDate"]
-                    self._show_duration = _data2[self._channel_id][0]["duration"]
-                    if _data2[self._channel_id][0]["covers"]:
-                        self._show_img = _data2[self._channel_id][0]["covers"][1]["url"]
+                        self._show_definition = _data2[self._channel_id][0]["definition"]
+                        self._show_start_dt = _data2[self._channel_id][0]["diffusionDate"]
+                        self._show_duration = _data2[self._channel_id][0]["duration"]
+                        if _data2[self._channel_id][0]["covers"]:
+                            self._show_img = _data2[self._channel_id][0]["covers"][1]["url"]
+                    
+                elif self.country == "poland":
+                    if _data2 != None:
+                        for epg in (_data2).get("epg", None):
+                            if self._channel_id in epg.get("channelExternalId", None):
+                                schedules = epg.get('schedule', None)
+                                for sch in schedules:
+                                    d = dt_util.utcnow()
+                                    if sch.get("startDate", None) <= calendar.timegm(d.utctimetuple()) <= sch.get("endDate", None):
+                                        self._show_start_dt = sch.get("startDate", None)
+                                        self._show_duration = sch.get("endDate", None) - sch.get("startDate", None)
+
+                                        if sch.get("isSeries", False) == True:
+                                            self._media_type = MEDIA_TYPE_TVSHOW
+                                            self._show_series_title = sch.get("name", None)
+                                            self._show_episode = sch.get("episodeNumber", None)
+                                            #self._show_title = sch.get("name", None)
+                                        else:
+                                            self._media_type = MEDIA_TYPE_CHANNEL                    
+                                            self._show_title = sch.get("name", None)
+                                        
+                                        if sch.get("imagePath", None) != None:
+                                            self._show_img = "https://tvgo.orange.pl{}".format(sch.get("imagePath", None))
+
+                                        break         
 
             # update position if we have show information
             if self._show_start_dt > 0: 
@@ -226,7 +261,7 @@ class LiveboxTvUhdClient(object):
         pass
 
     def get_channels(self):
-        return CHANNELS
+        return self.channels
 
     def turn_on(self):
         if not self.standby_state:
@@ -253,7 +288,7 @@ class LiveboxTvUhdClient(object):
         if isinstance(key, str):
             assert key in KEYS, "No such key: {}".format(key)
             key = KEYS[key]
-        _LOGGER.info("Press key %s", self.__get_key_name(key))
+        _LOGGER.debug("Press key %s", self.__get_key_name(key))
         return self.rq_livebox(OPERATION_KEYPRESS, OrderedDict([("key", key), ("mode", mode)]))
 
     def volume_up(self):
@@ -285,7 +320,7 @@ class LiveboxTvUhdClient(object):
         _LOGGER.debug("Media is already paused.")
 
     def get_channel_names(self, json_output=False):
-        channels = [x["name"] for x in CHANNELS]
+        channels = [x["name"] for x in self.channels]
         return json.dumps(channels) if json_output else channels
 
     def get_channel_info(self, channel):
@@ -294,7 +329,7 @@ class LiveboxTvUhdClient(object):
         if channel.startswith("#"):
             channel_index = channel.split("#")[1]
         # Look for an exact match first
-        for chan in CHANNELS:
+        for chan in self.channels:
             if channel_index:
                 if chan["index"] == channel_index:
                     return chan
@@ -302,14 +337,14 @@ class LiveboxTvUhdClient(object):
                 if chan["name"].lower() == channel.lower():
                     return chan
         # Try fuzzy matching it that did not give any result
-        chan = process.extractOne(channel, CHANNELS)[0]
+        chan = process.extractOne(channel, self.channels)[0]
         return chan
 
     def get_channel_id_from_name(self, channel):
         return self.get_channel_info(channel)["epg_id"]
 
     def get_channel_from_epg_id(self, epg_id):
-        res = [c for c in CHANNELS if c["epg_id"] == epg_id]
+        res = [c for c in self.channels if c["epg_id"] == epg_id]
         return res[0] if res else None
 
     def set_channel_by_id(self, epg_id):
@@ -344,11 +379,14 @@ class LiveboxTvUhdClient(object):
 
 
     def rq_epg(self, channel_id):
-        get_params = OrderedDict({"groupBy": "channel", "period": "current", "epgIds": channel_id, "mco": "OFR"})
+        if self.country == "france":
+            get_params = OrderedDict({"groupBy": "channel", "period": "current", "epgIds": channel_id, "mco": "OFR"})
+        elif self.country == "poland":
+            get_params = OrderedDict({"hhTech": "", "deviceCat": "otg"})
         _LOGGER.debug("Request EPG channel id %s", channel_id)
         try:
-            headers = {"User-Agent": EPG_USER_AGENT}
-            r = requests.get(EPG_URL, headers=headers, params=get_params, timeout=self.timeout)
+            headers = {"User-Agent": self.epg_user_agent}
+            r = requests.get(self.epg_url, headers=headers, params=get_params, timeout=self.timeout)
             r.raise_for_status()
             _LOGGER.debug("EPG response: %s", r.json())
             return r.json()

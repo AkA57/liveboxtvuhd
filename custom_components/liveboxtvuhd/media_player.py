@@ -24,7 +24,7 @@ from homeassistant.const import (
     CONF_HOST,
     CONF_NAME,
     CONF_PORT,
-    CONF_SCAN_INTERVAL,    
+    CONF_SCAN_INTERVAL,   
     STATE_OFF,
     STATE_ON,
     STATE_PAUSED,
@@ -38,6 +38,8 @@ from .const import (
     MIN_TIME_BETWEEN_FORCED_SCANS,
     DEFAULT_NAME,
     DEFAULT_PORT,
+    DEFAULT_COUNTRY,
+    CONF_COUNTRY
 )
 
 
@@ -56,26 +58,27 @@ SUPPORT_LIVEBOXUHD = (
     | SUPPORT_PLAY
 )
 
+
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
     {
         vol.Required(CONF_HOST): cv.string,
         vol.Optional(CONF_PORT, default=DEFAULT_PORT): cv.port,
         vol.Optional(CONF_NAME, default=DEFAULT_NAME): cv.string,
+        vol.Optional(CONF_COUNTRY, default=DEFAULT_COUNTRY): vol.In(["france", "poland"]),
         vol.Optional(CONF_SCAN_INTERVAL, default=SCAN_INTERVAL): cv.time_period,        
-    }
+    }, extra=vol.ALLOW_EXTRA
 )
-
 
 async def async_setup_platform(hass, config, async_add_entities, discovery_info=None):
     """Set up the Orange Livebox TV UHD platform."""
     host = config.get(CONF_HOST)
     port = config.get(CONF_PORT)
     name = config.get(CONF_NAME)
-
+    country = config.get(CONF_COUNTRY)
     livebox_devices = []
 
     try:
-        device = LiveboxTvUhdDevice(host, port, name)
+        device = LiveboxTvUhdDevice(host, port, name, country)
         livebox_devices.append(device)
     except OSError:
         _LOGGER.error(
@@ -90,10 +93,10 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
 class LiveboxTvUhdDevice(MediaPlayerEntity):
     """Representation of an Orange Livebox TV UHD."""
 
-    def __init__(self, host, port, name):
+    def __init__(self, host, port, name, country):
         """Initialize the Livebox TV UHD device."""
 
-        self._client = LiveboxTvUhdClient(host, port)
+        self._client = LiveboxTvUhdClient(host, port, country)
         # Assume that the appliance is not muted
         self._muted = False
         self._name = name
@@ -296,6 +299,3 @@ class LiveboxTvUhdDevice(MediaPlayerEntity):
     def media_previous_track(self):
         """Send the previous track command."""
         self._client.channel_down()
-
-
-    

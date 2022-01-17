@@ -1,7 +1,7 @@
 {
   "domain": "liveboxtvuhd",
   "name": "Orange Livebox TV UHD",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "documentation": "https://github.com/AkA57/liveboxtvuhd",
   "dependencies": [],
   "config_flow": false,

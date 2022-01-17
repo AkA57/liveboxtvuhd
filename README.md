@@ -2,6 +2,7 @@
 
 This is a custom component to allow control of Livebox TV UHD in [Homeassistant](https://home-assistant.io).
 
+- :new: **Support for orange.fr and orange.pl Livebox** (thanks to WRLPDZ) :new:
 - Power On/Off
 - Play/Pause
 - Next/Previous (Channel)
@@ -40,6 +41,7 @@ media_player:
     host: 192.168.1.2
     port: 8080
     scan_interval: 30
+    country: poland
 ```
 
 Name|Required|Description|Default
@@ -48,9 +50,10 @@ Name|Required|Description|Default
 `host`|yes|Host or ip address| 
 `port`|no|port number|8080 
 `scan_interval`|no|Time between scan in seconds|10
+`country`|no|choose between france and poland|france
 
 ## Examples
-With mini-media-player:
+With [mini-media-player](https://github.com/kalkih/mini-media-player):
 
 ![Example](https://github.com/AkA57/liveboxtvuhd/blob/dev/screenshot/example.png)
 ![Example](https://github.com/AkA57/liveboxtvuhd/blob/dev/screenshot/example4.png)
