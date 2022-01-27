@@ -43,8 +43,9 @@ class LiveboxTvUhdClient(object):
         self.timeout = timeout
         self.refresh_frequency = timedelta(seconds=refresh_frequency)
         # data from livebox
+        self._display_con_err = True
         self._name = None
-        self._standby_state = False
+        self._standby_state = "1"
         self._channel_id = None
         self._osd_context = None
         self._wol_support = None
@@ -68,10 +69,13 @@ class LiveboxTvUhdClient(object):
         _LOGGER.debug("Refresh Orange API data")
         _data = None
         self._osd_context = None
-        self._channel_id = None             
+        self._channel_id = None   
+        self._media_state = None
+    
 
         _datalivebox = self.rq_livebox(OPERATION_INFORMATION)
         if _datalivebox:
+            self._display_con_err = False
             _data = _datalivebox["result"]["data"]
 
 
@@ -369,13 +373,25 @@ class LiveboxTvUhdClient(object):
             _LOGGER.debug("Livebox response: %s", r.json())
             return r.json()
         except requests.exceptions.RequestException as err:
-            _LOGGER.error(err)
+            self._standby_state = "1"
+            if self._display_con_err:
+                self._display_con_err = False
+                _LOGGER.error(err)
         except requests.exceptions.HTTPError as errh:
-            _LOGGER.error(errh)
+            self._standby_state = "1"          
+            if self._display_con_err:
+                self._display_con_err = False         
+                _LOGGER.error(errh)
         except requests.exceptions.ConnectionError as errc:
-            _LOGGER.error(errc)
+            self._standby_state = "1"         
+            if self._display_con_err:
+                self._display_con_err = False        
+                _LOGGER.error(errc)
         except requests.exceptions.Timeout as errt:
-            _LOGGER.error(errt)
+            self._standby_state = "1"
+            if self._display_con_err:
+                self._display_con_err = False        
+                _LOGGER.error(errt)
 
 
     def rq_epg(self, channel_id):
