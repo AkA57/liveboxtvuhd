@@ -117,7 +117,10 @@ class LiveboxTvUhdClient(object):
                             self._media_type = MEDIA_TYPE_TVSHOW
                             self._show_series_title = _data2[self._channel_id][0]["title"]
                             self._show_season = _data2[self._channel_id][0]["season"]["number"]
-                            self._show_episode = _data2[self._channel_id][0]["episodeNumber"]
+                            if hasattr(_data2[self._channel_id][0], "episodeNumber"):
+                                self._show_episode = _data2[self._channel_id][0]["episodeNumber"]
+                            else:
+                                self._show_episode = 0
                             self._show_title = _data2[self._channel_id][0]["season"]["serie"]["title"]
                         else:
                             self._media_type = MEDIA_TYPE_CHANNEL                    
@@ -127,8 +130,10 @@ class LiveboxTvUhdClient(object):
                         self._show_definition = _data2[self._channel_id][0]["definition"]
                         self._show_start_dt = _data2[self._channel_id][0]["diffusionDate"]
                         self._show_duration = _data2[self._channel_id][0]["duration"]
-                        if _data2[self._channel_id][0]["covers"]:
+                        if _data2[self._channel_id][0]["covers"] and len(_data2[self._channel_id][0]["covers"]) > 1:
                             self._show_img = _data2[self._channel_id][0]["covers"][1]["url"]
+                        elif _data2[self._channel_id][0]["covers"] and len(_data2[self._channel_id][0]["covers"]) > 0:
+                            self._show_img = _data2[self._channel_id][0]["covers"][0]["url"]
                     
                 elif self.country == "poland":
                     if _data2 != None:
@@ -418,11 +423,3 @@ class LiveboxTvUhdClient(object):
         except requests.exceptions.Timeout as errt:
             _LOGGER.error("EPG response: %s", errt)
             pass
-
-
-
-
-           
-            
-            
-
