@@ -223,11 +223,11 @@ class LiveboxTvUhdRemote(RemoteEntity):
         self._state = STATE_ON
         self._attr_is_on = True
         self._client.turn_on()
-        if str:
-            self._client.set_channel_by_name(str)
+        if activity is not None:
+            self._client.set_channel_by_name(activity)
         else:
             activity = kwargs.get(ATTR_ACTIVITY, "")
-            if activity:
+            if activity is not None:
                 self._client.set_channel_by_name(activity)
 
     def toggle(self, activity: str = None, **kwargs):
