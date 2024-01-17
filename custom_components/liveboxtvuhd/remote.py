@@ -7,7 +7,7 @@ from .client import LiveboxTvUhdClient
 import requests
 import asyncio
 from collections.abc import Iterable
-from typing import Any
+from typing import Any, final
 import homeassistant.util.dt as dt_util
 import time
 
@@ -21,7 +21,7 @@ from homeassistant.components.remote import (
     DEFAULT_NUM_REPEATS,
     RemoteEntity,
     RemoteEntityFeature,
-    PLATFORM_SCHEMA
+    PLATFORM_SCHEMA, ATTR_ACTIVITY_LIST, ATTR_CURRENT_ACTIVITY
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
@@ -125,6 +125,7 @@ class LiveboxTvUhdRemote(RemoteEntity):
         try:
             await self.hass.async_add_executor_job(self.refresh_livebox_data)
             self._state = self.refresh_state()
+            self._attr_is_on = self._state is not None
             self._media_type = self._client.media_type
             self.refresh_channel_list()
             channel = self._client.channel_name
@@ -159,10 +160,15 @@ class LiveboxTvUhdRemote(RemoteEntity):
         """Return the name of the device."""
         return self._name
 
-    # @property
-    # def state(self):
-    #     """Return the state of the device."""
-    #     return self._state
+    @property
+    def state(self):
+        """Return the state of the device."""
+        return self._state
+
+    @property
+    def is_on(self):
+        """Return true if device is on."""
+        return self._state is not None
 
     @property
     def current_activity(self) -> str | None:
@@ -173,6 +179,18 @@ class LiveboxTvUhdRemote(RemoteEntity):
     def activity_list(self) -> list[str] | None:
         """Return the list of channels."""
         return [self._channel_list[c] for c in sorted(self._channel_list.keys())]
+
+    @final
+    @property
+    def state_attributes(self) -> dict[str, Any] | None:
+        """Return optional state attributes."""
+        if RemoteEntityFeature.ACTIVITY not in self.supported_features_compat:
+            return None
+        return {
+            ATTR_ACTIVITY_LIST: self.activity_list,
+            ATTR_CURRENT_ACTIVITY: self.current_activity,
+            "power_status": self.state
+        }
 
     def refresh_channel_list(self):
         """Refresh the list of available channels."""
@@ -197,12 +215,27 @@ class LiveboxTvUhdRemote(RemoteEntity):
     def turn_off(self):
         """Turn off media player."""
         self._state = STATE_OFF
+        self._attr_is_on = False
         self._client.turn_off()
 
-    def turn_on(self):
+    def turn_on(self, activity: str = None, **kwargs):
         """Turn on the media player."""
         self._state = STATE_ON
+        self._attr_is_on = True
         self._client.turn_on()
+        if str:
+            self._client.set_channel_by_name(str)
+        else:
+            activity = kwargs.get(ATTR_ACTIVITY, "")
+            if activity:
+                self._client.set_channel_by_name(activity)
+
+    def toggle(self, activity: str = None, **kwargs):
+        """Toggle a device."""
+        if self._state == STATE_ON:
+            self.turn_on(activity, **kwargs)
+        else:
+            self.turn_off()
 
     def send_command(self, command: Iterable[str], **kwargs: Any) -> None:
         """Send commands to one device."""
