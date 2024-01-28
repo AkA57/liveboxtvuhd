@@ -1,7 +1,7 @@
 {
     "name": "Livebox TV UHD",
     "hacs": "0.24.0",
-    "domains": [ "media_player" ],
+    "domains": [ "media_player", "remote" ],
     "iot_class": "Local Polling",
     "homeassistant": "0.110.0"
 }
