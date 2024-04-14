@@ -6,6 +6,8 @@ EPG_USER_AGENT = "Opera/9.80 (Linux i686; U; fr) Presto/2.10.287 Version/12.00 ;
 # epg: https://tvgo.orange.pl/gpapi/epg/epg?hhTech=&deviceCat=otg&chosen-day=1642287660
 # image: https://tvgo.orange.pl/mnapi/epgimages/akpah3154182.jpg
 
+TIMEZONE="Poland"
+
 CHANNELS = [
     {"index": "-1",  "epg_id": "-1",   "name": "N/A"},
     {"index": "0",  "epg_id": "0",   "name": "Mozajka"},

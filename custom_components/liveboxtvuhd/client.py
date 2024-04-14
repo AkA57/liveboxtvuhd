@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
+import datetime
 from collections import OrderedDict
 import json
 import logging
@@ -9,6 +10,7 @@ import homeassistant.util.dt as dt_util
 import calendar
 import os
 
+from dateutil import tz
 from fuzzywuzzy import process
 # from .const import CHANNELS
 from .const import KEYS
@@ -26,6 +28,7 @@ from homeassistant.components.media_player.const import (
 
 _LOGGER = logging.getLogger(__name__)
 
+
 class LiveboxTvUhdClient(object):
     def __init__(self, hostname, port=8080, country="france", timeout=3, refresh_frequency=60):
         from datetime import timedelta
@@ -34,9 +37,9 @@ class LiveboxTvUhdClient(object):
         self.country = country
         # import const for country
         if self.country == "france":
-            from .const_france import (CHANNELS, EPG_URL, EPG_USER_AGENT)
+            from .const_france import (CHANNELS, EPG_URL, EPG_USER_AGENT, TIMEZONE)
         elif self.country == "poland":
-            from .const_poland import (CHANNELS, EPG_URL, EPG_USER_AGENT)
+            from .const_poland import (CHANNELS, EPG_URL, EPG_USER_AGENT, TIMEZONE)
         self.channels = CHANNELS
         self.epg_url = EPG_URL
         self.epg_user_agent = EPG_USER_AGENT
@@ -64,26 +67,38 @@ class LiveboxTvUhdClient(object):
         self._show_position = 0
         self._last_channel_id = None
         self._cache_channel_img = {}
+        self._timezone = tz.gettz(TIMEZONE)
+
+    def _find_epg_entry(self, data) -> any:
+        if data is None:
+            return None
+        now = datetime.datetime.now(self._timezone)
+        for entry in data:
+            show_start_dt = entry["diffusionDate"]
+            show_duration = entry["duration"]
+            show_start = datetime.datetime.fromtimestamp(show_start_dt, self._timezone)
+            show_end = show_start + datetime.timedelta(0, show_duration)
+            if show_start <= now < show_end:
+                return entry
+        return data[0]
 
     def update(self):
         _LOGGER.debug("Refresh Orange API data")
         _data = None
         self._osd_context = None
-        self._channel_id = None   
+        self._channel_id = None
         self._media_state = None
-    
 
         _datalivebox = self.rq_livebox(OPERATION_INFORMATION)
         if _datalivebox:
             self._display_con_err = False
             _data = _datalivebox["result"]["data"]
 
-
         if _data:
             self._standby_state = _data["activeStandbyState"]
-            self._osd_context = _data["osdContext"] 
-            self._wol_support = _data["wolSupport"]   
-            
+            self._osd_context = _data["osdContext"]
+            self._wol_support = _data["wolSupport"]
+
             if "playedMediaState" in _data:
                 self._media_state = _data["playedMediaState"]
 
@@ -94,7 +109,7 @@ class LiveboxTvUhdClient(object):
         if self._channel_id and self.get_channel_from_epg_id(self._channel_id):
 
             # We should update all information only if channel or show change
-            if self._channel_id != self._last_channel_id or self._show_position > self._show_duration: 
+            if self._channel_id != self._last_channel_id or self._show_position > self._show_duration:
                 self._last_channel_id = self._channel_id
                 self._channel_name = self.get_channel_from_epg_id(self._channel_id)["name"]
 
@@ -108,33 +123,34 @@ class LiveboxTvUhdClient(object):
                 self._show_start_dt = 0
 
                 # Get EPG information
-                _data2 =  self.rq_epg(self._channel_id)               
+                _data2 = self.rq_epg(self._channel_id)
                 if self.country == "france":
-                    if _data2 != None and _data2[self._channel_id]:
+                    if self.country == "france":
+                        if _data2 is not None and _data2[self._channel_id]:
+                            # Show title depending of programType and current time
+                            entry = self._find_epg_entry(_data2[self._channel_id])
 
-                        # Show title depending of programType
-                        if _data2[self._channel_id][0]["programType"] == "EPISODE":
-                            self._media_type = MEDIA_TYPE_TVSHOW
-                            self._show_series_title = _data2[self._channel_id][0]["title"]
-                            self._show_season = _data2[self._channel_id][0]["season"]["number"]
-                            if hasattr(_data2[self._channel_id][0], "episodeNumber"):
-                                self._show_episode = _data2[self._channel_id][0]["episodeNumber"]
+                            if entry["programType"] == "EPISODE":
+                                self._media_type = MEDIA_TYPE_TVSHOW
+                                self._show_series_title = entry["title"]
+                                self._show_season = entry["season"]["number"]
+                                if hasattr(entry, "episodeNumber"):
+                                    self._show_episode = entry["episodeNumber"]
+                                else:
+                                    self._show_episode = 0
+                                self._show_title = entry["season"]["serie"]["title"]
                             else:
-                                self._show_episode = 0
-                            self._show_title = _data2[self._channel_id][0]["season"]["serie"]["title"]
-                        else:
-                            self._media_type = MEDIA_TYPE_CHANNEL                    
-                            self._show_title = _data2[self._channel_id][0]["title"]
+                                self._media_type = MEDIA_TYPE_CHANNEL
+                                self._show_title = entry["title"]
 
+                            self._show_definition = entry["definition"]
+                            self._show_start_dt = entry["diffusionDate"]
+                            self._show_duration = entry["duration"]
+                            if entry["covers"] and len(entry["covers"]) > 1:
+                                self._show_img = entry["covers"][1]["url"]
+                            elif entry["covers"] and len(entry["covers"]) > 0:
+                                self._show_img = entry["covers"][0]["url"]
 
-                        self._show_definition = _data2[self._channel_id][0]["definition"]
-                        self._show_start_dt = _data2[self._channel_id][0]["diffusionDate"]
-                        self._show_duration = _data2[self._channel_id][0]["duration"]
-                        if _data2[self._channel_id][0]["covers"] and len(_data2[self._channel_id][0]["covers"]) > 1:
-                            self._show_img = _data2[self._channel_id][0]["covers"][1]["url"]
-                        elif _data2[self._channel_id][0]["covers"] and len(_data2[self._channel_id][0]["covers"]) > 0:
-                            self._show_img = _data2[self._channel_id][0]["covers"][0]["url"]
-                    
                 elif self.country == "poland":
                     if _data2 != None:
                         for epg in (_data2).get("epg", None):
@@ -142,7 +158,8 @@ class LiveboxTvUhdClient(object):
                                 schedules = epg.get('schedule', None)
                                 for sch in schedules:
                                     d = dt_util.utcnow()
-                                    if sch.get("startDate", None) <= calendar.timegm(d.utctimetuple()) <= sch.get("endDate", None):
+                                    if sch.get("startDate", None) <= calendar.timegm(d.utctimetuple()) <= sch.get(
+                                            "endDate", None):
                                         self._show_start_dt = sch.get("startDate", None)
                                         self._show_duration = sch.get("endDate", None) - sch.get("startDate", None)
 
@@ -150,18 +167,19 @@ class LiveboxTvUhdClient(object):
                                             self._media_type = MEDIA_TYPE_TVSHOW
                                             self._show_series_title = sch.get("name", None)
                                             self._show_episode = sch.get("episodeNumber", None)
-                                            #self._show_title = sch.get("name", None)
+                                            # self._show_title = sch.get("name", None)
                                         else:
-                                            self._media_type = MEDIA_TYPE_CHANNEL                    
+                                            self._media_type = MEDIA_TYPE_CHANNEL
                                             self._show_title = sch.get("name", None)
-                                        
+
                                         if sch.get("imagePath", None) != None:
-                                            self._show_img = "https://tvgo.orange.pl{}".format(sch.get("imagePath", None))
+                                            self._show_img = "https://tvgo.orange.pl{}".format(
+                                                sch.get("imagePath", None))
 
-                                        break         
+                                        break
 
-            # update position if we have show information
-            if self._show_start_dt > 0: 
+                                        # update position if we have show information
+            if self._show_start_dt > 0:
                 d = dt_util.utcnow()
                 self._show_position = calendar.timegm(d.utctimetuple()) - self._show_start_dt
         else:
@@ -181,14 +199,12 @@ class LiveboxTvUhdClient(object):
             self._show_duration = 0
             self._show_position = 0
         return _data
-        
 
-    
-    @property 
+    @property
     def name(self):
         return self._name
 
-    @property 
+    @property
     def standby_state(self):
         return self._standby_state == "0"
 
@@ -231,7 +247,7 @@ class LiveboxTvUhdClient(object):
     @channel_name.setter
     def channel_name(self, value):
         self.set_channel_by_name(value)
-    
+
     @property
     def show_title(self):
         return self._show_title
@@ -251,7 +267,7 @@ class LiveboxTvUhdClient(object):
     @property
     def show_duration(self):
         return self._show_duration
-    
+
     @property
     def show_position(self):
         return self._show_position
@@ -383,21 +399,20 @@ class LiveboxTvUhdClient(object):
                 self._display_con_err = False
                 _LOGGER.error(err)
         except requests.exceptions.HTTPError as errh:
-            self._standby_state = "1"          
+            self._standby_state = "1"
             if self._display_con_err:
-                self._display_con_err = False         
+                self._display_con_err = False
                 _LOGGER.error(errh)
         except requests.exceptions.ConnectionError as errc:
-            self._standby_state = "1"         
+            self._standby_state = "1"
             if self._display_con_err:
-                self._display_con_err = False        
+                self._display_con_err = False
                 _LOGGER.error(errc)
         except requests.exceptions.Timeout as errt:
             self._standby_state = "1"
             if self._display_con_err:
-                self._display_con_err = False        
+                self._display_con_err = False
                 _LOGGER.error(errt)
-
 
     def rq_epg(self, channel_id):
         if self.country == "france":
