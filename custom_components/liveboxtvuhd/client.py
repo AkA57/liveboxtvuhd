@@ -9,7 +9,6 @@ import homeassistant.util.dt as dt_util
 import calendar
 import os
 
-from fuzzywuzzy import process
 # from .const import CHANNELS
 from .const import KEYS
 from .const import (
@@ -345,8 +344,6 @@ class LiveboxTvUhdClient(object):
             else:
                 if chan["name"].lower() == channel.lower():
                     return chan
-        # Try fuzzy matching it that did not give any result
-        chan = process.extractOne(channel, self.channels)[0]
         return chan
 
     def get_channel_id_from_name(self, channel):
