@@ -98,6 +98,7 @@ FBWD|Rewind
 FFWD|Fast Forward
 REC|Record
 VOD|VOD
+GUIDE|GUIDE
 
 ## Examples
 With [mini-media-player](https://github.com/kalkih/mini-media-player):
