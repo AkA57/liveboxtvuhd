@@ -1,8 +1,9 @@
 """Remote control support for Android TV Remote."""
 from __future__ import annotations
 
-from homeassistant.components.media_player.const import MEDIA_TYPE_CHANNEL, MEDIA_TYPE_TVSHOW
-
+from homeassistant.components.media_player.const import (
+    MediaType
+)
 from .client import LiveboxTvUhdClient
 import requests
 import asyncio
@@ -118,7 +119,7 @@ class LiveboxTvUhdRemote(RemoteEntity):
         self._media_series_title = None
         self._media_season = None
         self._media_episode = None
-        self._media_type = MEDIA_TYPE_CHANNEL
+        self._media_type = MediaType.CHANNEL
 
     async def async_update(self):
         """Retrieve the latest data."""
@@ -137,7 +138,7 @@ class LiveboxTvUhdRemote(RemoteEntity):
                 self._media_image_url = self._client.show_img
                 self._media_position =  self._client.show_position
                 self._media_last_updated = dt_util.utcnow()
-                if self._media_type == MEDIA_TYPE_TVSHOW:
+                if self._media_type == MediaType.TVSHOW:
                     self._media_series_title = self._client.show_series_title
                     self._media_season = self._client.show_season
                     self._media_episode = self._client.show_episode

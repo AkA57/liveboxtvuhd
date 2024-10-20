@@ -9,9 +9,9 @@ import voluptuous as vol
 from homeassistant.components.media_player import PLATFORM_SCHEMA, MediaPlayerEntity
 from homeassistant.components.media_player.const import (
     MediaPlayerEntityFeature,
-    MEDIA_TYPE_CHANNEL,
-    MEDIA_TYPE_TVSHOW,
+    MediaType
 )
+
 from homeassistant.const import (
     CONF_HOST,
     CONF_NAME,
@@ -104,7 +104,7 @@ class LiveboxTvUhdDevice(MediaPlayerEntity):
         self._media_series_title = None
         self._media_season = None
         self._media_episode = None
-        self._media_type = MEDIA_TYPE_CHANNEL
+        self._media_type = MediaType.CHANNEL
 
 
     async def async_update(self):
@@ -123,7 +123,7 @@ class LiveboxTvUhdDevice(MediaPlayerEntity):
                 self._media_image_url = self._client.show_img
                 self._media_position =  self._client.show_position
                 self._media_last_updated = dt_util.utcnow()
-                if self._media_type == MEDIA_TYPE_TVSHOW:
+                if self._media_type == MediaType.TVSHOW:
                     self._media_series_title = self._client.show_series_title
                     self._media_season = self._client.show_season
                     self._media_episode = self._client.show_episode

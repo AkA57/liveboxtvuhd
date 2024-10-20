@@ -19,8 +19,7 @@ from .const import (
     # EPG_USER_AGENT,
 )
 from homeassistant.components.media_player.const import (
-    MEDIA_TYPE_CHANNEL,
-    MEDIA_TYPE_TVSHOW,
+    MediaType
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -113,7 +112,7 @@ class LiveboxTvUhdClient(object):
 
                         # Show title depending of programType
                         if _data2[self._channel_id][0]["programType"] == "EPISODE":
-                            self._media_type = MEDIA_TYPE_TVSHOW
+                            self._media_type = MediaType.TVSHOW
                             self._show_series_title = _data2[self._channel_id][0]["title"]
                             self._show_season = _data2[self._channel_id][0]["season"]["number"]
                             if hasattr(_data2[self._channel_id][0], "episodeNumber"):
@@ -122,7 +121,7 @@ class LiveboxTvUhdClient(object):
                                 self._show_episode = 0
                             self._show_title = _data2[self._channel_id][0]["season"]["serie"]["title"]
                         else:
-                            self._media_type = MEDIA_TYPE_CHANNEL                    
+                            self._media_type = MediaType.CHANNEL                    
                             self._show_title = _data2[self._channel_id][0]["title"]
 
 
@@ -146,12 +145,12 @@ class LiveboxTvUhdClient(object):
                                         self._show_duration = sch.get("endDate", None) - sch.get("startDate", None)
 
                                         if sch.get("isSeries", False) == True:
-                                            self._media_type = MEDIA_TYPE_TVSHOW
+                                            self._media_type = MediaType.TVSHOW
                                             self._show_series_title = sch.get("name", None)
                                             self._show_episode = sch.get("episodeNumber", None)
                                             #self._show_title = sch.get("name", None)
                                         else:
-                                            self._media_type = MEDIA_TYPE_CHANNEL                    
+                                            self._media_type = MediaType.CHANNEL                    
                                             self._show_title = sch.get("name", None)
                                         
                                         if sch.get("imagePath", None) != None:
@@ -167,7 +166,7 @@ class LiveboxTvUhdClient(object):
             # Unknow or no channel displayed. Should be HOMEPAGE, NETFLIX, WHATEVER...
             self._channel_id = -1
             self._last_channel_id = self._channel_id
-            self._media_type = MEDIA_TYPE_CHANNEL
+            self._media_type = MediaType.CHANNEL
             if self._osd_context:
                 self._channel_name = self._osd_context.upper()
             self._show_title = None
