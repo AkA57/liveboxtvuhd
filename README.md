@@ -102,9 +102,9 @@ VOD|VOD
 ## Examples
 With [mini-media-player](https://github.com/kalkih/mini-media-player):
 
-![Example](https://github.com/AkA57/liveboxtvuhd/blob/dev/screenshot/example.png)
-![Example](https://github.com/AkA57/liveboxtvuhd/blob/dev/screenshot/example4.png)
-![Example](https://github.com/AkA57/liveboxtvuhd/blob/dev/screenshot/example5.png)
+![Example](https://github.com/AkA57/liveboxtvuhd/blob/master/screenshot/example.png)
+![Example](https://github.com/AkA57/liveboxtvuhd/blob/master/screenshot/example4.png)
+![Example](https://github.com/AkA57/liveboxtvuhd/blob/master/screenshot/example5.png)
 ```yaml
 type: 'custom:mini-media-player'
 entity: media_player.livebox
@@ -115,9 +115,9 @@ volume_stateless: true
 
 With standard media-player 
 
-![Example](https://github.com/AkA57/liveboxtvuhd/blob/dev/screenshot/example2.png)
-![Example](https://github.com/AkA57/liveboxtvuhd/blob/dev/screenshot/example3.png)
-![Example](https://github.com/AkA57/liveboxtvuhd/blob/dev/screenshot/example6.png)
+![Example](https://github.com/AkA57/liveboxtvuhd/blob/master/screenshot/example2.png)
+![Example](https://github.com/AkA57/liveboxtvuhd/blob/master/screenshot/example3.png)
+![Example](https://github.com/AkA57/liveboxtvuhd/blob/master/screenshot/example6.png)
 
 To trigger additional commands with the remote entity :
 ```yaml

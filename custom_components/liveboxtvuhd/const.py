@@ -1,5 +1,5 @@
 from datetime import timedelta
-__version__ = "1.0.4"
+__version__ = "1.1.1"
 PROJECT_URL = "https://github.com/AkA57/liveboxtvuhd/"
 ISSUE_URL = "{}issues".format(PROJECT_URL)
 
@@ -60,4 +60,5 @@ KEYS = {
     "FFWD": 159,
     "REC": 167,
     "VOD": 393,
+    "GUIDE": 365,
 }
