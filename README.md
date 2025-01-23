@@ -47,7 +47,15 @@ media_player:
     scan_interval: 30
     country: poland
 ```
-(Optional) remote entity to have additional commands, with the same parameters : 
+Name|Required|Description|Default
+--|--|--|--
+`name`|no|Friendly name|liveboxtvuhd
+`host`|yes|Host or ip address| 
+`port`|no|port number|8080 
+`scan_interval`|no|Time between scan in seconds|10
+`country`|no|choose between france and poland|france
+
+(Optional) add `remote` entity to have additional commands, with the same parameters : 
 ```yaml
 remote:
   - platform: liveboxtvuhd
@@ -58,47 +66,39 @@ remote:
     country: poland
 ```
 
-Name|Required|Description|Default
---|--|--|--
-`name`|no|Friendly name|liveboxtvuhd
-`host`|yes|Host or ip address| 
-`port`|no|port number|8080 
-`scan_interval`|no|Time between scan in seconds|10
-`country`|no|choose between france and poland|france
-
 Available commands for remote entity :
 
 Command|Description
 --|--
 POWER|Power toggle
-0|0
-1|1
-2|2
-3|3
-4|4
-5|5
-6|6
-7|7
-8|8
-9|9
-CH+|Channel Up
-CH-|Channel Down
-VOL+|Volume Up
-VOL-|Volume Down
-MUTE|Mute
-UP|Cursor Up
-DOWN|Cursor Down
-LEFT|Cursor Left
-RIGHT|Cursor Right
-OK|OK
-BACK|Back
-MENU|Menu
-PLAY/PAUSE|Play/Pause
-FBWD|Rewind
-FFWD|Fast Forward
-REC|Record
-VOD|VOD
-GUIDE|GUIDE
+`0`|0
+`1`|1
+`2`|2
+`3`|3
+`4`|4
+`5`|5
+`6`|6
+`7`|7
+`8`|8
+`9`|9
+`CH+`|Channel Up
+`CH-`|Channel Down
+`VOL+`|Volume Up
+`VOL-`|Volume Down
+`MUTE`|Mute
+`UP`|Cursor Up
+`DOWN`|Cursor Down
+`LEFT`|Cursor Left
+`RIGHT`|Cursor Right
+`OK`|OK
+`BACK`|Back
+`MENU`|Menu
+`PLAY/PAUSE`|Play/Pause
+`FBWD`|Rewind
+`FFWD`|Fast Forward
+`REC`|Record
+`VOD`|VOD
+`GUIDE`|GUIDE
 
 ## Examples
 With [mini-media-player](https://github.com/kalkih/mini-media-player):

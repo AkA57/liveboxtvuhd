@@ -185,7 +185,7 @@ class LiveboxTvUhdRemote(RemoteEntity):
     @property
     def state_attributes(self) -> dict[str, Any] | None:
         """Return optional state attributes."""
-        if RemoteEntityFeature.ACTIVITY not in self.supported_features_compat:
+        if RemoteEntityFeature.ACTIVITY not in self.supported_features:
             return None
         return {
             ATTR_ACTIVITY_LIST: self.activity_list,
