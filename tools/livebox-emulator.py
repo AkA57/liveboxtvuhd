@@ -18,17 +18,17 @@ class testHTTPServer_RequestHandler(BaseHTTPRequestHandler):
     if (self.path == '/remoteControl/cmd?operation=10'):
       json=state
 
-    message = bytes(
-      json
-      , 'utf8')
+      message = bytes(
+        json
+        , 'utf8')
 
-    # Send headers
-    self.send_header('Content-type','text/json; charset=utf-8')
-    self.send_header('Content-length', str(len(message)))
-    self.end_headers()
+      # Send headers
+      self.send_header('Content-type','text/json; charset=utf-8')
+      self.send_header('Content-length', str(len(message)))
+      self.end_headers()
 
-    # Write content as utf-8 data
-    self.wfile.write(message)
+      # Write content as utf-8 data
+      self.wfile.write(message)
     return
 
 def run():
