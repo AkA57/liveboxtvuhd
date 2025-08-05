@@ -46,14 +46,14 @@ media_player:
     host: 192.168.1.2
     port: 8080
     scan_interval: 30
-    country: poland
+    country: france
 ```
 Name|Required|Description|Default
 --|--|--|--
-`name`|no|Friendly name|liveboxtvuhd
+`name`|no|Friendly name|livebox_salon
 `host`|yes|Host or ip address| 
 `port`|no|port number|8080 
-`scan_interval`|no|Time between scan in seconds|10
+`scan_interval`|no|Time between scan in seconds|30
 `country`|no|choose between france and poland|france
 
 ### Remote
@@ -65,7 +65,7 @@ remote:
     host: 192.168.1.2
     port: 8080
     scan_interval: 30
-    country: poland
+    country: france
 ```
 
 Available commands for remote entity :
