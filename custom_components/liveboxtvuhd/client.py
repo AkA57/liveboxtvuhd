@@ -18,6 +18,8 @@ from .const import (
     # EPG_URL,
     # EPG_USER_AGENT,
 )
+
+
 from homeassistant.components.media_player.const import (
     MediaType
 )
@@ -94,7 +96,9 @@ class LiveboxTvUhdClient(object):
             # We should update all information only if channel or show change
             if self._channel_id != self._last_channel_id or self._show_position > self._show_duration: 
                 self._last_channel_id = self._channel_id
-                self._channel_name = self.get_channel_from_epg_id(self._channel_id)["name"]
+                chan = self.get_channel_from_epg_id(self._channel_id)
+                self._channel_name = chan["index"] + ". " + chan["name"]
+                #self._channel_name = self.get_channel_from_epg_id(self._channel_id)["name"]
 
                 # Reset everything
                 self._show_series_title = None
@@ -396,26 +400,27 @@ class LiveboxTvUhdClient(object):
 
 
     def rq_epg(self, channel_id):
-        if self.country == "france":
-            get_params = OrderedDict({"groupBy": "channel", "period": "current", "epgIds": channel_id, "mco": "OFR"})
-        elif self.country == "poland":
-            get_params = OrderedDict({"hhTech": "", "deviceCat": "otg"})
-        _LOGGER.debug("Request EPG channel id %s", channel_id)
-        try:
-            headers = {"User-Agent": self.epg_user_agent}
-            r = requests.get(self.epg_url, headers=headers, params=get_params, timeout=self.timeout)
-            r.raise_for_status()
-            _LOGGER.debug("EPG response: %s", r.json())
-            return r.json()
-        except requests.exceptions.RequestException as err:
-            _LOGGER.error("EPG response: %s", err)
-            pass
-        except requests.exceptions.HTTPError as errh:
-            _LOGGER.error("EPG response: %s", errh)
-            pass
-        except requests.exceptions.ConnectionError as errc:
-            _LOGGER.error("EPG response: %s", errc)
-            pass
-        except requests.exceptions.Timeout as errt:
-            _LOGGER.error("EPG response: %s", errt)
-            pass
+        if channel_id != "-1" and channel_id != None:
+            if self.country == "france":
+                get_params = OrderedDict({"groupBy": "channel", "period": "current", "epgIds": channel_id, "mco": "OFR"})
+            elif self.country == "poland":
+                get_params = OrderedDict({"hhTech": "", "deviceCat": "otg"})
+            _LOGGER.debug("Request EPG channel id %s", channel_id)
+            try:
+                headers = {"User-Agent": self.epg_user_agent}
+                r = requests.get(self.epg_url, headers=headers, params=get_params, timeout=self.timeout)
+                r.raise_for_status()
+                _LOGGER.debug("EPG response: %s", r.json())
+                return r.json()
+            except requests.exceptions.RequestException as err:
+                _LOGGER.error("EPG response: %s", err)
+                pass
+            except requests.exceptions.HTTPError as errh:
+                _LOGGER.error("EPG response: %s", errh)
+                pass
+            except requests.exceptions.ConnectionError as errc:
+                _LOGGER.error("EPG response: %s", errc)
+                pass
+            except requests.exceptions.Timeout as errt:
+                _LOGGER.error("EPG response: %s", errt)
+                pass

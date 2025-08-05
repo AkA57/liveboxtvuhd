@@ -1,13 +1,16 @@
-state='{ "result": { "responseCode": "0", "message": "ok", "data": { "timeShiftingState": "0", "playedMediaType": "LIVE", "playedMediaState": "PLAY", "playedMediaId": "192", "playedMediaContextId": "1", "playedMediaPosition": "NA", "osdContext": "LIVE", "macAddress": "00:1E:00:84:89:00", "wolSupport": "0", "friendlyName": "décodeur TV d\'Orange", "activeStandbyState": "0" } } }';
-#state='{ "result": { "responseCode": "0", "message": "ok", "data": { "timeShiftingState": "0", "playedMediaType": "LIVE", "playedMediaState": "PLAY", "playedMediaId": "14135", "playedMediaContextId": "1", "playedMediaPosition": "NA", "osdContext": "LIVE", "macAddress": "00:1E:00:84:89:00", "wolSupport": "0", "friendlyName": "décodeur TV d\'Orange", "activeStandbyState": "0" } } }';
-
 #!/usr/bin/env python
+import urllib.parse as urlparse
+from const_france import CHANNELS
+
+
+
 
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
 # HTTPRequestHandler class
 class testHTTPServer_RequestHandler(BaseHTTPRequestHandler):
-
+  # Define a global index channel
+  index = 1
   # GET
   def do_GET(self):
     # Send response status code
@@ -16,11 +19,9 @@ class testHTTPServer_RequestHandler(BaseHTTPRequestHandler):
 
     # Send message back to client
     if (self.path == '/remoteControl/cmd?operation=10'):
-      json=state
-
-      message = bytes(
-        json
-        , 'utf8')
+      print(f"Current channel is: {CHANNELS[testHTTPServer_RequestHandler.index]['name']} - index: {testHTTPServer_RequestHandler.index} - epg_id: {CHANNELS[testHTTPServer_RequestHandler.index]['epg_id']}")
+      json='{ "result": { "responseCode": "0", "message": "ok", "data": { "timeShiftingState": "0", "playedMediaType": "LIVE", "playedMediaState": "PLAY", "playedMediaId": "'+CHANNELS[testHTTPServer_RequestHandler.index]['epg_id']+'", "playedMediaContextId": "1", "playedMediaPosition": "NA", "osdContext": "LIVE", "macAddress": "00:1E:00:84:89:00", "wolSupport": "0", "friendlyName": "décodeur TV d\'Orange", "activeStandbyState": "0" } } }'
+      message = bytes(json, 'utf8')
 
       # Send headers
       self.send_header('Content-type','text/json; charset=utf-8')
@@ -29,8 +30,29 @@ class testHTTPServer_RequestHandler(BaseHTTPRequestHandler):
 
       # Write content as utf-8 data
       self.wfile.write(message)
-    return
 
+    elif self.path.startswith('/remoteControl/cmd?operation=01&key='):
+      # Extract the key value from the path
+      query_components = dict(urlparse.parse_qsl(urlparse.urlsplit(self.path).query))
+      key = query_components.get('key', None)
+
+      if key:
+        print(f"Received key: {key}")
+        if key == '402':
+          testHTTPServer_RequestHandler.index += 1
+          
+          if testHTTPServer_RequestHandler.index >= len(CHANNELS):
+            testHTTPServer_RequestHandler.index = 0
+        elif key == '403':
+          testHTTPServer_RequestHandler.index -= 1
+          if testHTTPServer_RequestHandler.index < 0:
+            testHTTPServer_RequestHandler.index = len(CHANNELS) - 1
+        else:
+          print(f"Key {key} received but no specific action defined.")
+      else:
+        print("No key found in the request.")
+    return
+  
 def run():
   print('starting server...')
 
@@ -38,7 +60,7 @@ def run():
   # Choose port 8080, for port 80, which is normally used for a http server, you need root access
   server_address = ('0.0.0.0', 8080)
   httpd = HTTPServer(server_address, testHTTPServer_RequestHandler)
-  print('running server...')
+  print('running livebox-simulator ...')
   httpd.serve_forever()
 
 

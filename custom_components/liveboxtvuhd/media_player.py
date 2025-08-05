@@ -227,7 +227,7 @@ class LiveboxTvUhdDevice(MediaPlayerEntity):
         new_channel_list = {}
         # update channels
         for channel in self._client.get_channels():
-            new_channel_list[int(channel["index"])] = channel["name"]
+            new_channel_list[int(channel["index"])] = channel["index"] + ". " + channel["name"]
         self._channel_list = new_channel_list
 
     def refresh_livebox_data(self):
