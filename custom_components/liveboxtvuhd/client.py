@@ -66,7 +66,7 @@ class LiveboxTvUhdClient(object):
         self._cache_channel_img = {}
 
     def update(self):
-        _LOGGER.debug("Refresh Orange API data")
+        _LOGGER.debug("Refresh Livebox data")
         _data = None
         self._osd_context = None
         self._channel_id = None   
@@ -335,10 +335,11 @@ class LiveboxTvUhdClient(object):
         return json.dumps(channels) if json_output else channels
 
     def get_channel_info(self, channel):
-        # If the channel start with '#' search by channel number
+        # If the channel contain "." search by channel index
+        _LOGGER.debug("Get channel info for %s", channel)
         channel_index = None
-        if channel.startswith("#"):
-            channel_index = channel.split("#")[1]
+        if "." in channel:
+            channel_index = channel.split(".")[0]
         # Look for an exact match first
         for chan in self.channels:
             if channel_index:
