@@ -29,7 +29,7 @@ CHANNELS = [
     {"index": "22",  "epg_id": "1403", "name": "6TER"},
     {"index": "23",  "epg_id": "1402", "name": "RMC STORY"},
     {"index": "24",  "epg_id": "1400", "name": "RMC DECOUVERTE"},
-    {"index": "25",  "epg_id": "1399", "name": "CHERIE 25"},
+    {"index": "25",  "epg_id": "1399", "name": "RMC LIFE"},
     
     {"index": "28",  "epg_id": "-1", "name": "L'ACTU DE LA TV D'ORANGE"},
     {"index": "29",  "epg_id": "-1", "name": "THEMATIQUE DE LA TV D'ORANGE"},
