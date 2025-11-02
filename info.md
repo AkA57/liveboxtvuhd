@@ -2,7 +2,7 @@
 
 This is a custom component to allow control of Livebox TV UHD in [Homeassistant](https://home-assistant.io).
 
-- :new: **Support for orange.fr and orange.pl Livebox** (thanks to WRLPDZ) :new:
+- :new: **Support for Orange France, Orange Caribbean (thanks to alanstrok) and Orange Poland (thanks to WRLPDZ)**  :new:
 - Power On/Off
 - Play/Pause
 - Next/Previous (Channel)
