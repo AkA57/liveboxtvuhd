@@ -34,11 +34,14 @@ class LiveboxTvUhdClient(object):
         self.country = country
         # import const for country
         if self.country == "france":
-            from .const_france import (CHANNELS, EPG_URL, EPG_USER_AGENT)
+            from .const_france import (CHANNELS, EPG_URL, EPG_USER_AGENT, EPG_MCO)
+        elif self.country == "caraibe":
+            from .const_caraibe import (CHANNELS, EPG_URL, EPG_USER_AGENT, EPG_MCO)
         elif self.country == "poland":
-            from .const_poland import (CHANNELS, EPG_URL, EPG_USER_AGENT)
+            from .const_poland import (CHANNELS, EPG_URL, EPG_USER_AGENT, EPG_MCO)
         self.channels = CHANNELS
         self.epg_url = EPG_URL
+        self.epg_mco = EPG_MCO
         self.epg_user_agent = EPG_USER_AGENT
         self.timeout = timeout
         self.refresh_frequency = timedelta(seconds=refresh_frequency)
@@ -111,7 +114,7 @@ class LiveboxTvUhdClient(object):
 
                 # Get EPG information
                 _data2 =  self.rq_epg(self._channel_id)               
-                if self.country == "france":
+                if self.country == "france" or self.country == "caraibe":
                     if _data2 != None and _data2[self._channel_id]:
 
                         # Show title depending of programType
@@ -402,8 +405,8 @@ class LiveboxTvUhdClient(object):
 
     def rq_epg(self, channel_id):
         if channel_id != "-1" and channel_id != None:
-            if self.country == "france":
-                get_params = OrderedDict({"groupBy": "channel", "period": "current", "epgIds": channel_id, "mco": "OFR"})
+            if self.country == "france" or self.country == "caraibe":
+                get_params = OrderedDict({"groupBy": "channel", "period": "current", "epgIds": channel_id, "mco": self.epg_mco})
             elif self.country == "poland":
                 get_params = OrderedDict({"hhTech": "", "deviceCat": "otg"})
             _LOGGER.debug("Request EPG channel id %s", channel_id)

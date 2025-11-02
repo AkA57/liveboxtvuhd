@@ -54,7 +54,7 @@ Name|Required|Description|Default
 `host`|yes|Host or ip address| 
 `port`|no|port number|8080 
 `scan_interval`|no|Time between scan in seconds|30
-`country`|no|choose between france and poland|france
+`country`|no|choose between france, caraibe and poland|france
 
 ### Remote
 (Optional) add `remote` entity to have additional commands, with the same parameters : 

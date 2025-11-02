@@ -56,7 +56,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
         vol.Required(CONF_HOST): cv.string,
         vol.Optional(CONF_PORT, default=DEFAULT_PORT): cv.port,
         vol.Optional(CONF_NAME, default=DEFAULT_NAME): cv.string,
-        vol.Optional(CONF_COUNTRY, default=DEFAULT_COUNTRY): vol.In(["france", "poland"]),
+        vol.Optional(CONF_COUNTRY, default=DEFAULT_COUNTRY): vol.In(["france", "poland", "caraibe"]),
         vol.Optional(CONF_SCAN_INTERVAL, default=SCAN_INTERVAL): cv.time_period,
     }, extra=vol.ALLOW_EXTRA
 )

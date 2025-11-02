@@ -1,7 +1,7 @@
 # EPG
 EPG_URL = 'https://rp-ott-mediation-tv.woopic.com/api-gw/live/v3/applications/STB4PC/programs'
 EPG_USER_AGENT = "Opera/9.80 (Linux i686; U; fr) Presto/2.10.287 Version/12.00 ; SC/IHD92 STB"
-
+EPG_MCO = "OFR"
 # channels
 CHANNELS = [
     {"index": "0",   "epg_id": "-1",   "name": "GUIDE TV"},
@@ -116,7 +116,7 @@ CHANNELS = [
     {"index": "112",  "epg_id": "1072", "name": "MUSEUM TV"},
     {"index": "113",  "epg_id": "3360", "name": "MAISONS & TRAVAUX TV"},
     {"index": "114",  "epg_id": "3106", "name": "TOP SANTE TV"},
-    {"index": "116",  "epg_id": "2184", "name": "INVESTIGATION DISCOVERY"},
+    {"index": "116",  "epg_id": "2184", "name": "DISCOVERY INVESTIGATION"},
     {"index": "117",  "epg_id": "3155", "name": "MARMITE TV"},
     {"index": "120",  "epg_id": "12", "name": "ANIMAUX"},
     {"index": "121",  "epg_id": "2037", "name": "CRIME DISTRICT"},
@@ -177,7 +177,7 @@ CHANNELS = [
     {"index": "216",  "epg_id": "1452", "name": "MEN'S UP TV"},
     {"index": "217",  "epg_id": "3767", "name": "SQOOL TV"},
     {"index": "218",  "epg_id": "-1", "name": "LE FIGARO TV"},
-    {"index": "219", "epg_id": "57",   "name": "DEMAIN TV"},
+    {"index": "219", "epg_id": "57",   "name": "DEMAIN.TV"},
     {"index": "220", "epg_id": "110",  "name": "KTO"},
     {"index": "221",  "epg_id": "-1", "name": "SOUVENIRS FROM EARTH"},
 
@@ -190,7 +190,7 @@ CHANNELS = [
     {"index": "231",  "epg_id": "124", "name": "LA CHAINE METEO"},
     {"index": "232", "epg_id": "671",  "name": "FRANCE 24 ENGLISH"},
     {"index": "233",  "epg_id": "2529", "name": "SKY NEWS"},
-    {"index": "234", "epg_id": "53",   "name": "CNN"},
+    {"index": "234", "epg_id": "53",   "name": "CNN INTERNATIONAL"},
     {"index": "235", "epg_id": "51",   "name": "CNBC"},
     {"index": "236", "epg_id": "410",  "name": "BLOOMBERG EUROPE"},
     {"index": "237", "epg_id": "19",   "name": "BBC WORLD NEWS"},
