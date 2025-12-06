@@ -46,6 +46,15 @@ CHANNELS = [
     {"index": "47", "epg_id": "10145", "name": "PARIS PREMIERE"},
     {"index": "48", "epg_id": "10225", "name": "TV BREIZH"},
 
+    {"index": "50", "epg_id": "-1", "name": "CANAL+"},
+    {"index": "52", "epg_id": "-1", "name": "C+ SPORT360"},
+    {"index": "53", "epg_id": "-1", "name": "C+ FOOT"},
+    {"index": "54", "epg_id": "-1", "name": "C+ SPORT"},
+    {"index": "55", "epg_id": "-1", "name": "C+ BOX OFFICE"},
+    {"index": "56", "epg_id": "-1", "name": "C+ CINEMAS"},
+    {"index": "57", "epg_id": "-1", "name": "C+ DOCS"},
+    {"index": "58", "epg_id": "-1", "name": "C+ KIDS"},
+
     {"index": "59", "epg_id": "1290", "name": "BEIN SPORTS 1"},
     {"index": "60", "epg_id": "1304", "name": "BEIN SPORTS 2"},
     {"index": "61", "epg_id": "1335", "name": "BEIN SPORTS 3"},
