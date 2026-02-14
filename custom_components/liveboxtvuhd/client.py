@@ -10,6 +10,7 @@ import calendar
 import os
 
 # from .const import CHANNELS
+from homeassistant.helpers.device_registry import format_mac
 from .const import KEYS
 from .const import (
     OPERATION_INFORMATION,
@@ -47,6 +48,7 @@ class LiveboxTvUhdClient(object):
         self.refresh_frequency = timedelta(seconds=refresh_frequency)
         # data from livebox
         self._display_con_err = True
+        self._mac_address = None
         self._name = None
         self._standby_state = "1"
         self._channel_id = None
@@ -85,7 +87,9 @@ class LiveboxTvUhdClient(object):
         if _data:
             self._standby_state = _data["activeStandbyState"]
             self._osd_context = _data["osdContext"] 
-            self._wol_support = _data["wolSupport"]   
+            self._wol_support = _data["wolSupport"]
+            if "macAddress" in _data:
+                self._mac_address = format_mac(_data["macAddress"])
             
             if "playedMediaState" in _data:
                 self._media_state = _data["playedMediaState"]
@@ -189,7 +193,11 @@ class LiveboxTvUhdClient(object):
         
 
     
-    @property 
+    @property
+    def mac_address(self):
+        return self._mac_address
+
+    @property
     def name(self):
         return self._name
 

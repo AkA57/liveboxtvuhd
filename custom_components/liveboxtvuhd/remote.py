@@ -157,6 +157,13 @@ class LiveboxTvUhdRemote(RemoteEntity):
             )
 
     @property
+    def unique_id(self) -> str | None:
+        """Return a unique ID for this entity."""
+        if self._client.mac_address:
+            return self._client.mac_address
+        return None
+
+    @property
     def name(self):
         """Return the name of the device."""
         return self._name

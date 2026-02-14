@@ -79,6 +79,7 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
             host,
             port,
         )
+
     async_add_entities(livebox_devices, True)
 
 
@@ -140,6 +141,13 @@ class LiveboxTvUhdDevice(MediaPlayerEntity):
                 self._client.port,
                 ce,
             )
+    @property
+    def unique_id(self) -> str | None:
+        """Return a unique ID for this entity."""
+        if self._client.mac_address:
+            return self._client.mac_address
+        return None
+
     @property
     def name(self):
         """Return the name of the device."""

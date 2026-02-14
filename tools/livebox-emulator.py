@@ -1,10 +1,6 @@
 #!/usr/bin/env python
 import urllib.parse as urlparse
 from const_france import CHANNELS
-
-
-
-
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
 # HTTPRequestHandler class
@@ -55,13 +51,9 @@ class testHTTPServer_RequestHandler(BaseHTTPRequestHandler):
   
 def run():
   print('starting server...')
-
   # Server settings
-  # Choose port 8080, for port 80, which is normally used for a http server, you need root access
   server_address = ('0.0.0.0', 8080)
   httpd = HTTPServer(server_address, testHTTPServer_RequestHandler)
-  print('running livebox-simulator ...')
+  print('running livebox-simulator on port 8080...')
   httpd.serve_forever()
-
-
 run()
