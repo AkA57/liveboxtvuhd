@@ -146,16 +146,16 @@ class LiveboxTvUhdClient(object):
                     
                 elif self.country == "poland":
                     if _data2 != None:
-                        for epg in (_data2).get("epg", None):
-                            if self._channel_id in epg.get("channelExternalId", None):
-                                schedules = epg.get('schedule', None)
+                        for epg in (_data2).get("guide", None):
+                            if self._channel_id in epg.get("channelExtId", None):
+                                schedules = epg.get('programs', None)
                                 for sch in schedules:
                                     d = dt_util.utcnow()
-                                    if sch.get("startDate", None) <= calendar.timegm(d.utctimetuple()) <= sch.get("endDate", None):
-                                        self._show_start_dt = sch.get("startDate", None)
-                                        self._show_duration = sch.get("endDate", None) - sch.get("startDate", None)
+                                    if sch.get("startTimeUtc", None) <= calendar.timegm(d.utctimetuple()) <= sch.get("endTimeUtc", None):
+                                        self._show_start_dt = sch.get("startTimeUtc", None)
+                                        self._show_duration = sch.get("endTimeUtc", None) - sch.get("startTimeUtc", None)
 
-                                        if sch.get("isSeries", False) == True:
+                                        if sch.get("seriesId", None) != None:
                                             self._media_type = MediaType.TVSHOW
                                             self._show_series_title = sch.get("name", None)
                                             self._show_episode = sch.get("episodeNumber", None)
@@ -164,8 +164,8 @@ class LiveboxTvUhdClient(object):
                                             self._media_type = MediaType.CHANNEL                    
                                             self._show_title = sch.get("name", None)
                                         
-                                        if sch.get("imagePath", None) != None:
-                                            self._show_img = "https://tvgo.orange.pl{}".format(sch.get("imagePath", None))
+                                        if sch.get("image", None) != None:
+                                            self._show_img = "https://tvgo.orange.pl/mnapi/gopher-2epgthumb/{}".format(sch.get("image", None))
 
                                         break         
 
@@ -416,14 +416,25 @@ class LiveboxTvUhdClient(object):
             if self.country == "france" or self.country == "caraibe":
                 get_params = OrderedDict({"groupBy": "channel", "period": "current", "epgIds": channel_id, "mco": self.epg_mco})
             elif self.country == "poland":
-                get_params = OrderedDict({"hhTech": "", "deviceCat": "otg"})
-            _LOGGER.debug("Request EPG channel id %s", channel_id)
+                now = dt_util.utcnow()
+                target_23h = now.replace(hour=23, minute=0, second=0, microsecond=0)
+                if now < target_23h:
+                    from datetime import timedelta
+                    target_23h = target_23h - timedelta(days=1)
+                epg_date = str(calendar.timegm(target_23h.utctimetuple()))
+                get_params = OrderedDict({"date": epg_date, "deviceCat": "otg"})
+            _LOGGER.debug("EPG request for channel_id=%s, country=%s, params=%s", channel_id, self.country, dict(get_params))
             try:
                 headers = {"User-Agent": self.epg_user_agent}
                 r = requests.get(self.epg_url, headers=headers, params=get_params, timeout=self.timeout)
+                _LOGGER.debug("EPG response HTTP %s, url=%s", r.status_code, r.url)
                 r.raise_for_status()
-                _LOGGER.debug("EPG response: %s", r.json())
-                return r.json()
+                data = r.json()
+                if data:
+                    _LOGGER.debug("EPG data OK for channel_id=%s (keys=%s)", channel_id, list(data.keys()) if isinstance(data, dict) else len(data))
+                else:
+                    _LOGGER.debug("EPG data EMPTY for channel_id=%s", channel_id)
+                return data
             except requests.exceptions.RequestException as err:
                 _LOGGER.error("EPG response: %s", err)
                 pass
