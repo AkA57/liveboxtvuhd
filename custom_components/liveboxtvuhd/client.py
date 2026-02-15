@@ -98,6 +98,10 @@ class LiveboxTvUhdClient:
         self._cached_show_duration: int = 0
         self._cached_channel_name: str | None = None
 
+        # EPG response cache for Poland (avoid re-fetching full 24h guide)
+        self._epg_cache: dict | None = None
+        self._epg_cache_date: str | None = None
+
     @property
     def mac_address(self) -> str | None:
         return self._mac_address
@@ -262,27 +266,28 @@ class LiveboxTvUhdClient:
         """Parse EPG response for Poland."""
         if epg_data is None:
             return
-        for epg in epg_data.get("epg", []):
-            if channel_id not in epg.get("channelExternalId", ""):
+        for epg in epg_data.get("guide", []):
+            if channel_id not in epg.get("channelExtId", ""):
                 continue
-            for sch in epg.get("schedule", []):
+            for sch in epg.get("programs", []):
                 d = dt_util.utcnow()
                 now_ts = calendar.timegm(d.utctimetuple())
-                start = sch.get("startDate", 0)
-                end = sch.get("endDate", 0)
+                start = sch.get("startTimeUtc", 0)
+                end = sch.get("endTimeUtc", 0)
                 if start <= now_ts <= end:
                     self._cached_show_start_dt = start
                     self._cached_show_duration = end - start
-
-                    if sch.get("isSeries", False):
+                   
+                    serie_id = sch.get("seriesId")
+                    if serie_id:
                         self._cached_show_series_title = sch.get("name")
                         self._cached_show_episode = sch.get("episodeNumber")
                     else:
                         self._cached_show_title = sch.get("name")
 
-                    img_path = sch.get("imagePath")
+                    img_path = sch.get("image")
                     if img_path:
-                        self._cached_show_img = f"https://tvgo.orange.pl{img_path}"
+                        self._cached_show_img = f"https://tvgo.orange.pl/mnapi/gopher-2epgthumb/{img_path}"
                     return
 
     @property
@@ -423,7 +428,21 @@ class LiveboxTvUhdClient:
                 "mco": self.epg_mco,
             }
         elif self.country == "poland":
-            get_params = {"hhTech": "", "deviceCat": "otg"}
+            from datetime import timedelta
+
+            now = dt_util.utcnow()
+            target_23h = now.replace(hour=23, minute=0, second=0, microsecond=0)
+            if now < target_23h:
+                target_23h = target_23h - timedelta(days=1)
+            epg_date = str(calendar.timegm(target_23h.utctimetuple()))
+
+            # Return cached EPG if same period
+            if self._epg_cache is not None and self._epg_cache_date == epg_date:
+                _LOGGER.debug("EPG cache HIT for date=%s", epg_date)
+                return self._epg_cache
+
+            _LOGGER.debug("EPG cache MISS, fetching for date=%s", epg_date)
+            get_params = {"date": epg_date, "deviceCat": "otg"}
         else:
             return None
 
@@ -436,7 +455,13 @@ class LiveboxTvUhdClient:
                 timeout=self.timeout,
             ) as resp:
                 resp.raise_for_status()
-                return await resp.json(content_type=None)
+                data = await resp.json(content_type=None)
+                # Cache full EPG response for Poland
+                if data and self.country == "poland":
+                    self._epg_cache = data
+                    self._epg_cache_date = epg_date
+                    _LOGGER.debug("EPG cached for date=%s", epg_date)
+                return data
         except (aiohttp.ClientError, asyncio.TimeoutError) as err:
             _LOGGER.error("EPG request failed: %s", err)
             return None
