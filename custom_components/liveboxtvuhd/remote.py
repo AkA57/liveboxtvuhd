@@ -1,16 +1,12 @@
-"""Remote control support for Android TV Remote."""
+"""Remote control support for Orange Livebox TV UHD."""
 from __future__ import annotations
 
-from homeassistant.components.media_player.const import (
-    MediaType
-)
-from .client import LiveboxTvUhdClient
-import requests
 import asyncio
+import logging
 from collections.abc import Iterable
-from typing import Any, final
-import homeassistant.util.dt as dt_util
-import time
+from typing import Any
+
+import voluptuous as vol
 
 from homeassistant.components.remote import (
     ATTR_ACTIVITY,
@@ -20,246 +16,174 @@ from homeassistant.components.remote import (
     DEFAULT_DELAY_SECS,
     DEFAULT_HOLD_SECS,
     DEFAULT_NUM_REPEATS,
+    PLATFORM_SCHEMA as REMOTE_PLATFORM_SCHEMA,
     RemoteEntity,
     RemoteEntityFeature,
-    PLATFORM_SCHEMA, ATTR_ACTIVITY_LIST, ATTR_CURRENT_ACTIVITY
 )
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant, callback
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.const import (
     CONF_HOST,
     CONF_NAME,
     CONF_PORT,
-    CONF_SCAN_INTERVAL, STATE_PLAYING, STATE_PAUSED, STATE_ON, STATE_OFF
+    STATE_OFF,
+    STATE_ON,
+    STATE_PAUSED,
+    STATE_PLAYING,
 )
-from .const import (
-    SCAN_INTERVAL,
-    MIN_TIME_BETWEEN_SCANS,
-    MIN_TIME_BETWEEN_FORCED_SCANS,
-    DEFAULT_NAME,
-    DEFAULT_PORT,
-    DEFAULT_COUNTRY,
-    CONF_COUNTRY
-)
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers.device_registry import DeviceInfo
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
 import homeassistant.helpers.config_validation as cv
 
-from .client import LiveboxTvUhdClient
-import requests
-import voluptuous as vol
-
-import logging
+from .client import LiveboxStateData
+from .const import (
+    CONF_COUNTRY,
+    DEFAULT_COUNTRY,
+    DEFAULT_NAME,
+    DEFAULT_PORT,
+    DOMAIN,
+)
+from .coordinator import LiveboxTvUhdCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
-PARALLEL_UPDATES = 0
-
-PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
+# Deprecated YAML platform schema (triggers import)
+PLATFORM_SCHEMA = REMOTE_PLATFORM_SCHEMA.extend(
     {
         vol.Required(CONF_HOST): cv.string,
         vol.Optional(CONF_PORT, default=DEFAULT_PORT): cv.port,
         vol.Optional(CONF_NAME, default=DEFAULT_NAME): cv.string,
-        vol.Optional(CONF_COUNTRY, default=DEFAULT_COUNTRY): vol.In(["france", "poland", "caraibe"]),
-        vol.Optional(CONF_SCAN_INTERVAL, default=SCAN_INTERVAL): cv.time_period,
-    }, extra=vol.ALLOW_EXTRA
+        vol.Optional(CONF_COUNTRY, default=DEFAULT_COUNTRY): vol.In(
+            ["france", "poland", "caraibe"]
+        ),
+    },
+    extra=vol.ALLOW_EXTRA,
 )
 
 
 async def async_setup_platform(hass, config, async_add_entities, discovery_info=None):
-    """Set up the Orange Livebox TV UHD platform."""
-    host = config.get(CONF_HOST)
-    port = config.get(CONF_PORT)
-    name = config.get(CONF_NAME)
-    country = config.get(CONF_COUNTRY)
-    livebox_devices = []
-
-    try:
-        device = LiveboxTvUhdRemote(host, port, name, country)
-        livebox_devices.append(device)
-    except OSError:
-        _LOGGER.error(
-            "Failed to connect to Livebox TV UHD at %s:%s. "
-            "Please check your configuration",
-            host,
-            port,
-        )
-    async_add_entities(livebox_devices, True)
-
-# async def async_setup_entry(
-#     hass: HomeAssistant,
-#     config_entry: ConfigEntry,
-#     async_add_entities: AddEntitiesCallback,
-# ) -> None:
-#     """Set up the Android TV remote entity based on a config entry."""
-#     api: AndroidTVRemote = hass.data[DOMAIN][config_entry.entry_id]
-#     async_add_entities([AndroidTVRemoteEntity(api, config_entry)])
+    """Set up via YAML platform (deprecated, does not trigger a second import)."""
+    _LOGGER.warning(
+        "Configuration of %s remote via platform YAML is deprecated. "
+        "Please use the UI or move config under 'liveboxtvuhd:' key",
+        DOMAIN,
+    )
 
 
-class LiveboxTvUhdRemote(RemoteEntity):
-    """Android TV Remote Entity."""
+async def async_setup_entry(
+    hass: HomeAssistant,
+    entry: ConfigEntry,
+    async_add_entities: AddEntitiesCallback,
+) -> None:
+    """Set up the remote from a config entry."""
+    coordinator: LiveboxTvUhdCoordinator = hass.data[DOMAIN][entry.entry_id]
+    async_add_entities([LiveboxTvUhdRemote(coordinator, entry)])
 
+
+class LiveboxTvUhdRemote(
+    CoordinatorEntity[LiveboxTvUhdCoordinator], RemoteEntity
+):
+    """Orange Livebox TV UHD Remote Entity."""
+
+    _attr_has_entity_name = True
+    _attr_name = "Remote"
     _attr_supported_features = RemoteEntityFeature.ACTIVITY
 
-    def __init__(self, host, port, name, country):
-        """Initialize the Livebox TV UHD device."""
-
-        self._client = LiveboxTvUhdClient(host, port, country)
-        # Assume that the appliance is not muted
-        self._muted = False
-        self._name = name
-        self._current_source = None
-        self._state = None
-        self._channel_list = {}
-        self._current_channel = None
-        self._current_show = None
-        self._media_duration = None
-        self._media_position = None
-        self._media_image_url = None
-        self._media_last_updated = None
-        self._media_series_title = None
-        self._media_season = None
-        self._media_episode = None
-        self._media_type = MediaType.CHANNEL
-
-    async def async_update(self):
-        """Retrieve the latest data."""
-        try:
-            await self.hass.async_add_executor_job(self.refresh_livebox_data)
-            self._state = self.refresh_state()
-            self._attr_is_on = self._state is not None
-            self._media_type = self._client.media_type
-            self.refresh_channel_list()
-            channel = self._client.channel_name
-            _LOGGER.debug(channel)
-            if channel is not None:
-                self._current_channel = channel
-                self._current_show = self._client.show_title
-                self._media_duration = self._client.show_duration
-                self._media_image_url = self._client.show_img
-                self._media_position =  self._client.show_position
-                self._media_last_updated = dt_util.utcnow()
-                if self._media_type == MediaType.TVSHOW:
-                    self._media_series_title = self._client.show_series_title
-                    self._media_season = self._client.show_season
-                    self._media_episode = self._client.show_episode
-                else:
-                    self._media_series_title = None
-                    self._media_season = None
-                    self._media_episode = None
-        except requests.ConnectionError as ce:
-            self._state = None
-            _LOGGER.error(
-                "Failed to connect to Livebox TV UHD at %s:%s. "
-                "Please check your configuration.yaml. (%s)",
-                self._client.hostname,
-                self._client.port,
-                ce,
+    def __init__(
+        self, coordinator: LiveboxTvUhdCoordinator, entry: ConfigEntry
+    ) -> None:
+        super().__init__(coordinator)
+        mac = coordinator.client.mac_address
+        if mac:
+            self._attr_unique_id = mac
+            self._attr_device_info = DeviceInfo(
+                identifiers={(DOMAIN, mac)},
+                connections={("mac", mac)},
+                name=entry.title,
+                manufacturer="Orange",
+                model="Livebox TV UHD",
+            )
+        else:
+            self._attr_unique_id = entry.entry_id
+            self._attr_device_info = DeviceInfo(
+                identifiers={(DOMAIN, entry.entry_id)},
+                name=entry.title,
+                manufacturer="Orange",
+                model="Livebox TV UHD",
             )
 
     @property
-    def unique_id(self) -> str | None:
-        """Return a unique ID for this entity."""
-        if self._client.mac_address:
-            return self._client.mac_address
-        return None
+    def _data(self) -> LiveboxStateData | None:
+        return self.coordinator.data
 
     @property
-    def name(self):
-        """Return the name of the device."""
-        return self._name
-
-    @property
-    def state(self):
-        """Return the state of the device."""
-        return self._state
-
-    @property
-    def is_on(self):
-        """Return true if device is on."""
-        return self._state is not None
+    def is_on(self) -> bool:
+        return self._data is not None and self._data.is_on
 
     @property
     def current_activity(self) -> str | None:
-        """Return the current activity (channel)."""
-        return self._current_channel
+        return self._data.channel_name if self._data else None
 
     @property
     def activity_list(self) -> list[str] | None:
-        """Return the list of channels."""
-        return [self._channel_list[c] for c in sorted(self._channel_list.keys())]
+        if self._data and self._data.channel_list:
+            return [self._data.channel_list[k] for k in sorted(self._data.channel_list)]
+        return []
 
-    @final
     @property
-    def state_attributes(self) -> dict[str, Any] | None:
-        """Return optional state attributes."""
-        if RemoteEntityFeature.ACTIVITY not in self.supported_features:
+    def extra_state_attributes(self) -> dict[str, Any] | None:
+        """Return power status as extra attribute."""
+        if self._data is None:
             return None
-        return {
-            ATTR_ACTIVITY_LIST: self.activity_list,
-            ATTR_CURRENT_ACTIVITY: self.current_activity,
-            "power_status": self.state
-        }
-
-    def refresh_channel_list(self):
-        """Refresh the list of available channels."""
-        new_channel_list = {}
-        # update channels
-        for channel in self._client.get_channels():
-            new_channel_list[int(channel["index"])] = channel["name"]
-        self._channel_list = new_channel_list
-
-    def refresh_livebox_data(self):
-        info = self._client.info
-
-    def refresh_state(self):
-        """Refresh the current media state."""
-        state = self._client.media_state
+        state = self._data.media_state
         if state == "PLAY":
-            return STATE_PLAYING
-        if state == "PAUSE":
-            return STATE_PAUSED
-        return STATE_ON if self._client.is_on else STATE_OFF
-
-    def turn_off(self):
-        """Turn off media player."""
-        self._state = STATE_OFF
-        self._attr_is_on = False
-        self._client.turn_off()
-
-    def turn_on(self, activity: str = None, **kwargs):
-        """Turn on the media player."""
-        self._state = STATE_ON
-        self._attr_is_on = True
-        self._client.turn_on()
-        if activity is not None:
-            self._client.set_channel_by_name(activity)
+            power = STATE_PLAYING
+        elif state == "PAUSE":
+            power = STATE_PAUSED
         else:
-            activity = kwargs.get(ATTR_ACTIVITY, "")
-            if activity is not None:
-                self._client.set_channel_by_name(activity)
+            power = STATE_ON if self._data.is_on else STATE_OFF
+        return {"power_status": power}
 
-    def toggle(self, activity: str = None, **kwargs):
-        """Toggle a device."""
-        if self._state == STATE_ON:
-            self.turn_on(activity, **kwargs)
+    async def async_turn_on(self, activity: str | None = None, **kwargs: Any) -> None:
+        """Turn on the Livebox, optionally tuning to a channel."""
+        await self.coordinator.client.async_turn_on()
+        channel = activity or kwargs.get(ATTR_ACTIVITY)
+        if channel:
+            await self.coordinator.client.async_set_channel_by_name(channel)
+        await self.coordinator.async_refresh()
+
+    async def async_turn_off(self, **kwargs: Any) -> None:
+        await self.coordinator.client.async_turn_off()
+        await self.coordinator.async_refresh()
+
+    async def async_toggle(self, activity: str | None = None, **kwargs: Any) -> None:
+        """Toggle the device (fixed: was inverted in original code)."""
+        if self.is_on:
+            await self.async_turn_off()
         else:
-            self.turn_off()
+            await self.async_turn_on(activity, **kwargs)
 
-    def send_command(self, command: Iterable[str], **kwargs: Any) -> None:
-        """Send commands to one device."""
+    async def async_send_command(
+        self, command: Iterable[str], **kwargs: Any
+    ) -> None:
+        """Send commands to the Livebox."""
         num_repeats = kwargs.get(ATTR_NUM_REPEATS, DEFAULT_NUM_REPEATS)
         delay_secs = kwargs.get(ATTR_DELAY_SECS, DEFAULT_DELAY_SECS)
         hold_secs = kwargs.get(ATTR_HOLD_SECS, DEFAULT_HOLD_SECS)
 
-        _LOGGER.debug("async_send_command %s %d repeats %d delay", ''.join(list(command)), num_repeats, delay_secs)
-
         for _ in range(num_repeats):
             for single_command in command:
-                _LOGGER.debug("Remote command %", single_command)
+                _LOGGER.debug("Remote command: %s", single_command)
                 if hold_secs > 0:
-                    self._client.press_key(single_command, mode=1)
-                    time.sleep(hold_secs)
-                    self._client.press_key(single_command, mode=2)
+                    await self.coordinator.client.async_press_key(
+                        single_command, mode=1
+                    )
+                    await asyncio.sleep(hold_secs)
+                    await self.coordinator.client.async_press_key(
+                        single_command, mode=2
+                    )
                 else:
-                    self._client.press_key(single_command)
-                time.sleep(delay_secs)
+                    await self.coordinator.client.async_press_key(single_command)
+                await asyncio.sleep(delay_secs)
+        await self.coordinator.async_refresh()

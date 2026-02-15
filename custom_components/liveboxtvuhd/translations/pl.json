@@ -1,0 +1,22 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Orange Livebox TV UHD",
+        "description": "Skonfiguruj dekoder Orange Livebox TV UHD.",
+        "data": {
+          "host": "Adres hosta",
+          "port": "Port",
+          "name": "Nazwa",
+          "country": "Kraj"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Nie mo\u017cna po\u0142\u0105czy\u0107 si\u0119 z Livebox. Sprawd\u017a adres i port."
+    },
+    "abort": {
+      "already_configured": "To urz\u0105dzenie jest ju\u017c skonfigurowane."
+    }
+  }
+}

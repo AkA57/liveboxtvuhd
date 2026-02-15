@@ -1,35 +1,22 @@
+"""Constants for the Orange Livebox TV UHD integration."""
 from datetime import timedelta
-__version__ = "1.6.0"
-PROJECT_URL = "https://github.com/AkA57/liveboxtvuhd/"
-ISSUE_URL = "{}issues".format(PROJECT_URL)
 
-NAME = "liveboxtvuhd"
-STARTUP = """
--------------------------------------------------------------------
-{}
-Version: {}
-This is a custom integration.
-If you have any issues with this you need to open an issue here:
-{}
--------------------------------------------------------------------
-""".format(
-    NAME, __version__, ISSUE_URL
-)
+__version__ = "2.0.0"
 
+DOMAIN = "liveboxtvuhd"
+PLATFORMS = ["media_player", "remote"]
+COUNTRIES = ["france", "caraibe", "poland"]
 
 SCAN_INTERVAL = timedelta(seconds=10)
-MIN_TIME_BETWEEN_SCANS = SCAN_INTERVAL
-MIN_TIME_BETWEEN_FORCED_SCANS = timedelta(seconds=1)
-DEFAULT_NAME = "liveboxtvuhd"
+DEFAULT_NAME = "Orange Livebox TV UHD"
 DEFAULT_PORT = 8080
 CONF_COUNTRY = "country"
 DEFAULT_COUNTRY = "france"
 
-
-# Livebox operation
-OPERATION_INFORMATION = '10'
-OPERATION_CHANNEL_CHANGE = '09'
-OPERATION_KEYPRESS = '01'
+# Livebox operation codes
+OPERATION_INFORMATION = "10"
+OPERATION_CHANNEL_CHANGE = "09"
+OPERATION_KEYPRESS = "01"
 
 KEYS = {
     "POWER": 116,

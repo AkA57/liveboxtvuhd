@@ -1,11 +1,13 @@
 {
   "domain": "liveboxtvuhd",
   "name": "Orange Livebox TV UHD",
-  "version": "1.6.0",
+  "version": "2.0.0",
   "documentation": "https://github.com/AkA57/liveboxtvuhd",
   "dependencies": [],
-  "config_flow": false,
   "codeowners": [
     "@AkA57"
-  ]
+  ],
+  "config_flow": true,
+  "iot_class": "local_polling",
+  "integration_type": "device"
 }

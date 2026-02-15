@@ -2,7 +2,7 @@
 
 This is a custom component to allow control of Livebox TV UHD in [Homeassistant](https://home-assistant.io).
 
-- :new: **Support for Orange France, Orange Caribbean (thanks to alanstrok) and Orange Poland (thanks to WRLPDZ)**  :new:
+- Support for **Orange France**, **Orange Caribbean** (thanks to alanstrok) and **Orange Poland** (thanks to WRLPDZ)
 - Power On/Off
 - Play/Pause
 - Next/Previous (Channel)
@@ -15,13 +15,13 @@ This is a custom component to allow control of Livebox TV UHD in [Homeassistant]
   - Show time
   - Serie title, season and episode
 
-Two platform entities are available : 
-- media player entity to handle the features above
-- remote entity to bring additional controls
+Two entities are created under a single device:
+- **Media Player** entity to handle the features above
+- **Remote** entity to bring additional controls
 
-## Installation 
+## Installation
 
-**Recommanded**
+**Recommended**
 
 Use [HACS](https://hacs.xyz/).
 
@@ -36,43 +36,54 @@ Use [HACS](https://hacs.xyz/).
 
 ## Configuration
 
-### Media Player
-Edit `configuration.yaml` and add `liveboxtvuhd` as a new `media_player`
+### UI (Recommended)
+
+1. Go to **Settings > Devices & Services > Add Integration**
+2. Search for **Orange Livebox TV UHD**
+3. Enter the host, port, name and country of your Livebox
+4. Both entities (media player and remote) are automatically created under a single device
+
+### YAML (Deprecated)
+
+YAML configuration is still supported for backward compatibility but will trigger an automatic import into the UI config entries. A deprecation warning will be logged.
+
+**Integration-level config** (recommended YAML format):
+
+```yaml
+liveboxtvuhd:
+  host: 192.168.1.2
+  port: 8080
+  name: Livebox Salon
+  country: france
+```
+
+**Platform-level config** (legacy, also triggers auto-import):
 
 ```yaml
 media_player:
   - platform: liveboxtvuhd
-    name: livebox-salon
+    name: Livebox Salon
     host: 192.168.1.2
     port: 8080
-    scan_interval: 30
     country: france
 ```
+
+> **Note:** In v1.x, you had to configure both `media_player:` and `remote:` platforms separately. This is no longer needed. A single configuration (UI or YAML) now creates both entities automatically. If you still have a `remote:` platform entry in your YAML, it will be ignored with a deprecation warning. You can safely remove it.
+
 Name|Required|Description|Default
 --|--|--|--
-`name`|no|Friendly name|livebox_salon
-`host`|yes|Host or ip address| 
-`port`|no|port number|8080 
-`scan_interval`|no|Time between scan in seconds|30
-`country`|no|choose between france, caraibe and poland|france
+`host`|yes|Host or IP address|
+`port`|no|Port number|8080
+`name`|no|Friendly name|Orange Livebox TV UHD
+`country`|no|Choose between `france`, `caraibe` and `poland`|`france`
 
-### Remote
-(Optional) add `remote` entity to have additional commands, with the same parameters : 
-```yaml
-remote:
-  - platform: liveboxtvuhd
-    name: livebox_salon
-    host: 192.168.1.2
-    port: 8080
-    scan_interval: 30
-    country: france
-```
+### Remote commands
 
-Available commands for remote entity :
+Available commands for the remote entity:
 
 Command|Description
 --|--
-POWER|Power toggle
+`POWER`|Power toggle
 `0`|0
 `1`|1
 `2`|2
@@ -104,7 +115,7 @@ POWER|Power toggle
 
 ## Examples
 ### Media Player
-With standard media-player 
+With standard media-player
 
 ![Example](https://github.com/AkA57/liveboxtvuhd/blob/master/screenshot/example2.png)
 ![Example](https://github.com/AkA57/liveboxtvuhd/blob/master/screenshot/example3.png)
@@ -219,7 +230,7 @@ custom_actions:
     icon: ok
     styles: |-
       :host {
-        width: 230px;      
+        width: 230px;
       }
       .circlepad {
         border: 1px solid #444;
@@ -286,7 +297,7 @@ styles: |-
   }
   #menu::part(icon) {
   color: rgb(229, 9, 20);
-  }  
+  }
   #netflix::part(icon) {
   color: rgb(229, 9, 20);
   }
@@ -311,7 +322,7 @@ grid_options:
   rows: 1
 ```
 
-To trigger additional commands with the remote entity :
+To trigger additional commands with the remote entity:
 ```yaml
 service: remote.send_command
 data:

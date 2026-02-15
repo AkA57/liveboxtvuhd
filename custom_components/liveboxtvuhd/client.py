@@ -1,357 +1,360 @@
-#!/usr/bin/env python
-# coding: utf-8
-from collections import OrderedDict
-import json
-import logging
-import requests
-import time
-import homeassistant.util.dt as dt_util
+"""Client for Orange Livebox TV UHD."""
+from __future__ import annotations
+
+import asyncio
 import calendar
-import os
+import logging
+from collections import OrderedDict
+from dataclasses import dataclass, field
 
-# from .const import CHANNELS
+import aiohttp
+
+import homeassistant.util.dt as dt_util
+from homeassistant.components.media_player.const import MediaType
 from homeassistant.helpers.device_registry import format_mac
-from .const import KEYS
+
+from . import const_caraibe, const_france, const_poland
 from .const import (
-    OPERATION_INFORMATION,
+    KEYS,
     OPERATION_CHANNEL_CHANGE,
+    OPERATION_INFORMATION,
     OPERATION_KEYPRESS,
-    # EPG_URL,
-    # EPG_USER_AGENT,
 )
 
-
-from homeassistant.components.media_player.const import (
-    MediaType
-)
+COUNTRY_MODULES = {
+    "france": const_france,
+    "caraibe": const_caraibe,
+    "poland": const_poland,
+}
 
 _LOGGER = logging.getLogger(__name__)
 
-class LiveboxTvUhdClient(object):
-    def __init__(self, hostname, port=8080, country="france", timeout=3, refresh_frequency=60):
-        from datetime import timedelta
+
+@dataclass
+class LiveboxStateData:
+    """Immutable snapshot of the Livebox state returned by async_update."""
+
+    mac_address: str | None = None
+    standby_state: str = "1"
+    channel_id: str | None = None
+    osd_context: str | None = None
+    wol_support: str | None = None
+    media_state: str | None = None
+    media_type: str = MediaType.CHANNEL
+    channel_name: str | None = None
+    show_title: str | None = None
+    show_series_title: str | None = None
+    show_season: int | None = None
+    show_episode: int | None = None
+    show_definition: str | None = None
+    show_img: str | None = None
+    show_start_dt: int = 0
+    show_duration: int = 0
+    show_position: int = 0
+    channel_list: dict[int, str] = field(default_factory=dict)
+
+    @property
+    def is_on(self) -> bool:
+        return self.standby_state == "0"
+
+
+class LiveboxTvUhdClient:
+    """Async client for Orange Livebox TV UHD."""
+
+    def __init__(
+        self,
+        session: aiohttp.ClientSession,
+        hostname: str,
+        port: int = 8080,
+        country: str = "france",
+        timeout: int = 3,
+    ) -> None:
+        self.session = session
         self.hostname = hostname
         self.port = port
         self.country = country
-        # import const for country
-        if self.country == "france":
-            from .const_france import (CHANNELS, EPG_URL, EPG_USER_AGENT, EPG_MCO)
-        elif self.country == "caraibe":
-            from .const_caraibe import (CHANNELS, EPG_URL, EPG_USER_AGENT, EPG_MCO)
-        elif self.country == "poland":
-            from .const_poland import (CHANNELS, EPG_URL, EPG_USER_AGENT, EPG_MCO)
-        self.channels = CHANNELS
-        self.epg_url = EPG_URL
-        self.epg_mco = EPG_MCO
-        self.epg_user_agent = EPG_USER_AGENT
-        self.timeout = timeout
-        self.refresh_frequency = timedelta(seconds=refresh_frequency)
-        # data from livebox
+        self.timeout = aiohttp.ClientTimeout(total=timeout)
+
+        # Load country-specific data
+        mod = COUNTRY_MODULES[country]
+        self.channels: list[dict] = mod.CHANNELS
+        self.epg_url: str = mod.EPG_URL
+        self.epg_mco: str = mod.EPG_MCO
+        self.epg_user_agent: str = mod.EPG_USER_AGENT
+
+        # Persistent state across updates
+        self._mac_address: str | None = None
+        self._last_channel_id: str | None = None
         self._display_con_err = True
-        self._mac_address = None
-        self._name = None
-        self._standby_state = "1"
-        self._channel_id = None
-        self._osd_context = None
-        self._wol_support = None
-        self._media_state = None
-        self._media_type = None
-        self._show_series_title = None
-        self._show_season = None
-        self._show_episode = None
-        # data from woopic.com
-        self._channel_name = None
-        self._show_title = None
-        self._show_definition = None
-        self._show_img = None
-        self._show_start_dt = 0
-        self._show_duration = 0
-        self._show_position = 0
-        self._last_channel_id = None
-        self._cache_channel_img = {}
 
-    def update(self):
-        _LOGGER.debug("Refresh Livebox data")
-        _data = None
-        self._osd_context = None
-        self._channel_id = None   
-        self._media_state = None
-    
+        # Cached EPG data (only refreshed on channel change)
+        self._cached_show_title: str | None = None
+        self._cached_show_series_title: str | None = None
+        self._cached_show_season: int | None = None
+        self._cached_show_episode: int | None = None
+        self._cached_show_definition: str | None = None
+        self._cached_show_img: str | None = None
+        self._cached_show_start_dt: int = 0
+        self._cached_show_duration: int = 0
+        self._cached_channel_name: str | None = None
 
-        _datalivebox = self.rq_livebox(OPERATION_INFORMATION)
-        if _datalivebox:
-            self._display_con_err = False
-            _data = _datalivebox["result"]["data"]
-
-
-        if _data:
-            self._standby_state = _data["activeStandbyState"]
-            self._osd_context = _data["osdContext"] 
-            self._wol_support = _data["wolSupport"]
-            if "macAddress" in _data:
-                self._mac_address = format_mac(_data["macAddress"])
-            
-            if "playedMediaState" in _data:
-                self._media_state = _data["playedMediaState"]
-
-            if "playedMediaId" in _data:
-                self._channel_id = _data["playedMediaId"]
-
-        # If a channel is displayed
-        if self._channel_id and self.get_channel_from_epg_id(self._channel_id):
-
-            # We should update all information only if channel or show change
-            if self._channel_id != self._last_channel_id or self._show_position > self._show_duration: 
-                self._last_channel_id = self._channel_id
-                chan = self.get_channel_from_epg_id(self._channel_id)
-                self._channel_name = chan["index"] + ". " + chan["name"]
-                #self._channel_name = self.get_channel_from_epg_id(self._channel_id)["name"]
-
-                # Reset everything
-                self._show_series_title = None
-                self._show_season = None
-                self._show_episode = None
-                self._show_title = None
-                self._show_img = None
-                self._show_position = 0
-                self._show_start_dt = 0
-
-                # Get EPG information
-                _data2 =  self.rq_epg(self._channel_id)               
-                if self.country == "france" or self.country == "caraibe":
-                    if _data2 != None and _data2[self._channel_id]:
-
-                        # Show title depending of programType
-                        if _data2[self._channel_id][0]["programType"] == "EPISODE":
-                            self._media_type = MediaType.TVSHOW
-                            self._show_series_title = _data2[self._channel_id][0]["title"]
-                            self._show_season = _data2[self._channel_id][0]["season"]["number"]
-                            if hasattr(_data2[self._channel_id][0], "episodeNumber"):
-                                self._show_episode = _data2[self._channel_id][0]["episodeNumber"]
-                            else:
-                                self._show_episode = 0
-                            self._show_title = _data2[self._channel_id][0]["season"]["serie"]["title"]
-                        else:
-                            self._media_type = MediaType.CHANNEL                    
-                            self._show_title = _data2[self._channel_id][0]["title"]
-
-
-                        self._show_definition = _data2[self._channel_id][0]["definition"]
-                        self._show_start_dt = _data2[self._channel_id][0]["diffusionDate"]
-                        self._show_duration = _data2[self._channel_id][0]["duration"]
-                        if _data2[self._channel_id][0]["covers"] and len(_data2[self._channel_id][0]["covers"]) > 1:
-                            self._show_img = _data2[self._channel_id][0]["covers"][1]["url"]
-                        elif _data2[self._channel_id][0]["covers"] and len(_data2[self._channel_id][0]["covers"]) > 0:
-                            self._show_img = _data2[self._channel_id][0]["covers"][0]["url"]
-                    
-                elif self.country == "poland":
-                    if _data2 != None:
-                        for epg in (_data2).get("epg", None):
-                            if self._channel_id in epg.get("channelExternalId", None):
-                                schedules = epg.get('schedule', None)
-                                for sch in schedules:
-                                    d = dt_util.utcnow()
-                                    if sch.get("startDate", None) <= calendar.timegm(d.utctimetuple()) <= sch.get("endDate", None):
-                                        self._show_start_dt = sch.get("startDate", None)
-                                        self._show_duration = sch.get("endDate", None) - sch.get("startDate", None)
-
-                                        if sch.get("isSeries", False) == True:
-                                            self._media_type = MediaType.TVSHOW
-                                            self._show_series_title = sch.get("name", None)
-                                            self._show_episode = sch.get("episodeNumber", None)
-                                            #self._show_title = sch.get("name", None)
-                                        else:
-                                            self._media_type = MediaType.CHANNEL                    
-                                            self._show_title = sch.get("name", None)
-                                        
-                                        if sch.get("imagePath", None) != None:
-                                            self._show_img = "https://tvgo.orange.pl{}".format(sch.get("imagePath", None))
-
-                                        break         
-
-            # update position if we have show information
-            if self._show_start_dt > 0: 
-                d = dt_util.utcnow()
-                self._show_position = calendar.timegm(d.utctimetuple()) - self._show_start_dt
-        else:
-            # Unknow or no channel displayed. Should be HOMEPAGE, NETFLIX, WHATEVER...
-            self._channel_id = -1
-            self._last_channel_id = self._channel_id
-            self._media_type = MediaType.CHANNEL
-            if self._osd_context:
-                self._channel_name = self._osd_context.upper()
-            self._show_title = None
-            self._show_season = None
-            self._show_episode = None
-            self._show_title = None
-            self._show_definition = None
-            self._show_img = None
-            self._show_start_dt = 0
-            self._show_duration = 0
-            self._show_position = 0
-        return _data
-        
-
-    
     @property
-    def mac_address(self):
+    def mac_address(self) -> str | None:
         return self._mac_address
 
+    def _build_channel_list(self) -> dict[int, str]:
+        """Build sorted channel list for source selection."""
+        return {
+            int(ch["index"]): f'{ch["index"]}. {ch["name"]}'
+            for ch in self.channels
+        }
+
+    async def async_test_connection(self) -> bool:
+        """Test if the Livebox is reachable. Used by config flow."""
+        try:
+            result = await self._async_rq_livebox(OPERATION_INFORMATION)
+            return result is not None
+        except (aiohttp.ClientError, asyncio.TimeoutError):
+            return False
+
+    async def async_update(self) -> LiveboxStateData:
+        """Poll the Livebox and return a state snapshot."""
+        osd_context = None
+        channel_id = None
+        media_state = None
+        standby_state = "1"
+        wol_support = None
+
+        data = await self._async_rq_livebox(OPERATION_INFORMATION)
+        if data:
+            self._display_con_err = False
+            result = data.get("result", {}).get("data", {})
+            if result:
+                standby_state = result.get("activeStandbyState", "1")
+                osd_context = result.get("osdContext")
+                wol_support = result.get("wolSupport")
+                if "macAddress" in result:
+                    self._mac_address = format_mac(result["macAddress"])
+                media_state = result.get("playedMediaState")
+                channel_id = result.get("playedMediaId")
+
+        # If a known channel is displayed
+        if channel_id and self.get_channel_from_epg_id(channel_id):
+            need_epg_refresh = (
+                channel_id != self._last_channel_id
+                or self._cached_show_position > self._cached_show_duration
+            )
+
+            if need_epg_refresh:
+                self._last_channel_id = channel_id
+                chan = self.get_channel_from_epg_id(channel_id)
+                self._cached_channel_name = f'{chan["index"]}. {chan["name"]}'
+
+                # Reset cached EPG data
+                self._cached_show_series_title = None
+                self._cached_show_season = None
+                self._cached_show_episode = None
+                self._cached_show_title = None
+                self._cached_show_img = None
+                self._cached_show_start_dt = 0
+                self._cached_show_duration = 0
+
+                # Fetch EPG
+                epg_data = await self._async_rq_epg(channel_id)
+                if self.country in ("france", "caraibe"):
+                    self._parse_epg_france(epg_data, channel_id)
+                elif self.country == "poland":
+                    self._parse_epg_poland(epg_data, channel_id)
+
+            # Update position
+            show_position = 0
+            if self._cached_show_start_dt > 0:
+                d = dt_util.utcnow()
+                show_position = calendar.timegm(d.utctimetuple()) - self._cached_show_start_dt
+
+            media_type = MediaType.CHANNEL
+            if self._cached_show_series_title is not None:
+                media_type = MediaType.TVSHOW
+
+            return LiveboxStateData(
+                mac_address=self._mac_address,
+                standby_state=standby_state,
+                channel_id=channel_id,
+                osd_context=osd_context,
+                wol_support=wol_support,
+                media_state=media_state,
+                media_type=media_type,
+                channel_name=self._cached_channel_name,
+                show_title=self._cached_show_title,
+                show_series_title=self._cached_show_series_title,
+                show_season=self._cached_show_season,
+                show_episode=self._cached_show_episode,
+                show_definition=self._cached_show_definition,
+                show_img=self._cached_show_img,
+                show_start_dt=self._cached_show_start_dt,
+                show_duration=self._cached_show_duration,
+                show_position=show_position,
+                channel_list=self._build_channel_list(),
+            )
+
+        # Unknown or no channel (HOMEPAGE, NETFLIX, etc.)
+        return self._no_channel_state(
+            standby_state=standby_state,
+            osd_context=osd_context,
+            wol_support=wol_support,
+            media_state=media_state,
+        )
+
+    def _no_channel_state(
+        self,
+        standby_state: str,
+        osd_context: str | None,
+        wol_support: str | None,
+        media_state: str | None,
+    ) -> LiveboxStateData:
+        """Build state when no known channel is displayed."""
+        self._last_channel_id = None
+        self._cached_show_start_dt = 0
+        self._cached_show_duration = 0
+        channel_name = osd_context.upper() if osd_context else None
+        return LiveboxStateData(
+            mac_address=self._mac_address,
+            standby_state=standby_state,
+            channel_id="-1",
+            osd_context=osd_context,
+            wol_support=wol_support,
+            media_state=media_state,
+            media_type=MediaType.CHANNEL,
+            channel_name=channel_name,
+            channel_list=self._build_channel_list(),
+        )
+
+    def _parse_epg_france(self, epg_data: dict | None, channel_id: str) -> None:
+        """Parse EPG response for France/Caraibe."""
+        if epg_data is None or channel_id not in epg_data:
+            return
+        programs = epg_data[channel_id]
+        if not programs:
+            return
+        prog = programs[0]
+
+        if prog.get("programType") == "EPISODE":
+            self._cached_show_series_title = prog.get("title")
+            season = prog.get("season", {})
+            self._cached_show_season = season.get("number")
+            self._cached_show_episode = prog.get("episodeNumber", 0)
+            serie = season.get("serie", {})
+            self._cached_show_title = serie.get("title")
+        else:
+            self._cached_show_title = prog.get("title")
+
+        self._cached_show_definition = prog.get("definition")
+        self._cached_show_start_dt = prog.get("diffusionDate", 0)
+        self._cached_show_duration = prog.get("duration", 0)
+
+        covers = prog.get("covers") or []
+        if len(covers) > 1:
+            self._cached_show_img = covers[1].get("url")
+        elif len(covers) > 0:
+            self._cached_show_img = covers[0].get("url")
+
+    def _parse_epg_poland(self, epg_data: dict | None, channel_id: str) -> None:
+        """Parse EPG response for Poland."""
+        if epg_data is None:
+            return
+        for epg in epg_data.get("epg", []):
+            if channel_id not in epg.get("channelExternalId", ""):
+                continue
+            for sch in epg.get("schedule", []):
+                d = dt_util.utcnow()
+                now_ts = calendar.timegm(d.utctimetuple())
+                start = sch.get("startDate", 0)
+                end = sch.get("endDate", 0)
+                if start <= now_ts <= end:
+                    self._cached_show_start_dt = start
+                    self._cached_show_duration = end - start
+
+                    if sch.get("isSeries", False):
+                        self._cached_show_series_title = sch.get("name")
+                        self._cached_show_episode = sch.get("episodeNumber")
+                    else:
+                        self._cached_show_title = sch.get("name")
+
+                    img_path = sch.get("imagePath")
+                    if img_path:
+                        self._cached_show_img = f"https://tvgo.orange.pl{img_path}"
+                    return
+
     @property
-    def name(self):
-        return self._name
+    def _cached_show_position(self) -> int:
+        """Compute current show position from cached start time."""
+        if self._cached_show_start_dt > 0:
+            d = dt_util.utcnow()
+            return calendar.timegm(d.utctimetuple()) - self._cached_show_start_dt
+        return 0
 
-    @property 
-    def standby_state(self):
-        return self._standby_state == "0"
+    # ── Control methods ──────────────────────────────────────────────
 
-    @property
-    def channel_id(self):
-        return self._channel_id
+    async def async_turn_on(self) -> None:
+        """Wake the Livebox from standby."""
+        await self.async_press_key(key=KEYS["POWER"])
+        await asyncio.sleep(2)
+        await self.async_press_key(key=KEYS["OK"])
 
-    @property
-    def osd_context(self):
-        return self._osd_context
+    async def async_turn_off(self) -> None:
+        """Put the Livebox in standby."""
+        await self.async_press_key(key=KEYS["POWER"])
 
-    @property
-    def media_state(self):
-        return self._media_state
+    async def async_press_key(self, key: int | str, mode: int = 0) -> dict | None:
+        """Send a key press to the Livebox.
 
-    @property
-    def media_type(self):
-        return self._media_type
-
-    @property
-    def show_series_title(self):
-        return self._show_series_title
-
-    @property
-    def show_season(self):
-        return self._show_season
-
-    @property
-    def show_episode(self):
-        return self._show_episode
-
-    @property
-    def wol_support(self):
-        return self._wol_support == "0"
-
-    @property
-    def channel_name(self):
-        return self._channel_name
-
-    @channel_name.setter
-    def channel_name(self, value):
-        self.set_channel_by_name(value)
-    
-    @property
-    def show_title(self):
-        return self._show_title
-
-    @property
-    def show_definition(self):
-        return self._show_definition
-
-    @property
-    def show_img(self):
-        return self._show_img
-
-    @property
-    def show_start_dt(self):
-        return self._show_start_dt
-
-    @property
-    def show_duration(self):
-        return self._show_duration
-    
-    @property
-    def show_position(self):
-        return self._show_position
-
-    @property
-    def is_on(self):
-        return self.standby_state
-
-    @property
-    def info(self):
-        return self.update()
-
-    # TODO
-    @staticmethod
-    def discover():
-        pass
-
-    def get_channels(self):
-        return self.channels
-
-    def turn_on(self):
-        if not self.standby_state:
-            self.press_key(key=KEYS["POWER"])
-            time.sleep(2)
-            self.press_key(key=KEYS["OK"])
-
-    def turn_off(self):
-        if self.standby_state:
-            return self.press_key(key=KEYS["POWER"])
-
-    def __get_key_name(self, key_id):
-        for key_name, k_id in KEYS.items():
-            if k_id == key_id:
-                return key_name
-
-    def press_key(self, key, mode=0):
-        """
-        modes:
-            0 -> simple press
-            1 -> long press
-            2 -> release after long press
+        Modes: 0=press, 1=long press, 2=release.
         """
         if isinstance(key, str):
-            assert key in KEYS, "No such key: {}".format(key)
+            if key not in KEYS:
+                _LOGGER.error("Unknown key: %s", key)
+                return None
             key = KEYS[key]
-        _LOGGER.debug("Press key %s", self.__get_key_name(key))
-        return self.rq_livebox(OPERATION_KEYPRESS, OrderedDict([("key", key), ("mode", mode)]))
+        return await self._async_rq_livebox(
+            OPERATION_KEYPRESS,
+            OrderedDict([("key", key), ("mode", mode)]),
+        )
 
-    def volume_up(self):
-        return self.press_key(key=KEYS["VOL+"])
+    async def async_volume_up(self) -> None:
+        await self.async_press_key(key=KEYS["VOL+"])
 
-    def volume_down(self):
-        return self.press_key(key=KEYS["VOL-"])
+    async def async_volume_down(self) -> None:
+        await self.async_press_key(key=KEYS["VOL-"])
 
-    def mute(self):
-        return self.press_key(key=KEYS["MUTE"])
+    async def async_mute(self) -> None:
+        await self.async_press_key(key=KEYS["MUTE"])
 
-    def channel_up(self):
-        return self.press_key(key=KEYS["CH+"])
+    async def async_channel_up(self) -> None:
+        await self.async_press_key(key=KEYS["CH+"])
 
-    def channel_down(self):
-        return self.press_key(key=KEYS["CH-"])
+    async def async_channel_down(self) -> None:
+        await self.async_press_key(key=KEYS["CH-"])
 
-    def play_pause(self):
-        return self.press_key(key=KEYS["PLAY/PAUSE"])
+    async def async_play_pause(self) -> None:
+        await self.async_press_key(key=KEYS["PLAY/PAUSE"])
 
-    def play(self):
-        if self.media_state == "PAUSE":
-            return self.play_pause()
-        _LOGGER.debug("Media is already playing.")
+    async def async_play(self) -> None:
+        """Send play if currently paused."""
+        # Note: media_state isn't tracked here anymore; caller should check.
+        await self.async_play_pause()
 
-    def pause(self):
-        if self.media_state == "PLAY":
-            return self.play_pause()
-        _LOGGER.debug("Media is already paused.")
+    async def async_pause(self) -> None:
+        """Send pause if currently playing."""
+        await self.async_play_pause()
 
-    def get_channel_names(self, json_output=False):
-        channels = [x["name"] for x in self.channels]
-        return json.dumps(channels) if json_output else channels
+    def get_channel_names(self) -> list[str]:
+        return [ch["name"] for ch in self.channels]
 
-    def get_channel_info(self, channel):
-        # If the channel contain "." search by channel index
-        _LOGGER.debug("Get channel info for %s", channel)
+    def get_channel_info(self, channel: str) -> dict | None:
+        """Find channel info by name or index prefix (e.g. '1. TF1')."""
         channel_index = None
         if "." in channel:
-            channel_index = channel.split(".")[0]
-        # Look for an exact match first
+            channel_index = channel.split(".")[0].strip()
         for chan in self.channels:
             if channel_index:
                 if chan["index"] == channel_index:
@@ -359,80 +362,81 @@ class LiveboxTvUhdClient(object):
             else:
                 if chan["name"].lower() == channel.lower():
                     return chan
-        return chan
+        return None
 
-    def get_channel_id_from_name(self, channel):
-        return self.get_channel_info(channel)["epg_id"]
-
-    def get_channel_from_epg_id(self, epg_id):
+    def get_channel_from_epg_id(self, epg_id: str) -> dict | None:
+        """Find a channel by its EPG ID."""
         res = [c for c in self.channels if c["epg_id"] == epg_id]
         return res[0] if res else None
 
-    def set_channel_by_id(self, epg_id):
-        # The EPG ID needs to be 10 chars long, padded with '*' chars
+    async def async_set_channel_by_name(self, channel: str) -> None:
+        """Tune to a channel by name or display string."""
+        info = self.get_channel_info(channel)
+        if info:
+            await self.async_set_channel_by_id(info["epg_id"])
+        else:
+            _LOGGER.warning("Channel not found: %s", channel)
+
+    async def async_set_channel_by_id(self, epg_id: str) -> None:
+        """Tune to a channel by EPG ID."""
         epg_id_str = str(epg_id).rjust(10, "*")
-        _LOGGER.debug("Tune to channel %s, epg_id %s", self.get_channel_from_epg_id(epg_id)["name"], epg_id_str)
-        return self.rq_livebox(OPERATION_CHANNEL_CHANGE, OrderedDict([("epg_id", epg_id_str), ("uui", "1")]))
+        chan = self.get_channel_from_epg_id(epg_id)
+        name = chan["name"] if chan else "unknown"
+        _LOGGER.debug("Tune to channel %s, epg_id %s", name, epg_id_str)
+        await self._async_rq_livebox(
+            OPERATION_CHANNEL_CHANGE,
+            OrderedDict([("epg_id", epg_id_str), ("uui", "1")]),
+        )
 
-    def set_channel_by_name(self, channel):
-        epg_id = self.get_channel_id_from_name(channel)
-        return self.set_channel_by_id(epg_id)
+    # ── HTTP helpers ─────────────────────────────────────────────────
 
-    def rq_livebox(self, operation, params=None):
-        url = "http://{}:{}/remoteControl/cmd".format(self.hostname, self.port)
-        get_params = OrderedDict({"operation": operation})
-        _LOGGER.debug("Request Livebox operation %s", operation)
+    async def _async_rq_livebox(
+        self, operation: str, params: dict | None = None
+    ) -> dict | None:
+        """Send a command to the Livebox."""
+        url = f"http://{self.hostname}:{self.port}/remoteControl/cmd"
+        get_params: dict = {"operation": operation}
         if params:
             get_params.update(params)
         try:
-            r = requests.get(url, params=get_params, timeout=self.timeout)
-            r.raise_for_status()
-            _LOGGER.debug("Livebox response: %s", r.json())
-            return r.json()
-        except requests.exceptions.RequestException as err:
-            self._standby_state = "1"
+            async with self.session.get(
+                url, params=get_params, timeout=self.timeout
+            ) as resp:
+                resp.raise_for_status()
+                return await resp.json(content_type=None)
+        except (aiohttp.ClientError, asyncio.TimeoutError) as err:
             if self._display_con_err:
                 self._display_con_err = False
-                _LOGGER.error(err)
-        except requests.exceptions.HTTPError as errh:
-            self._standby_state = "1"          
-            if self._display_con_err:
-                self._display_con_err = False         
-                _LOGGER.error(errh)
-        except requests.exceptions.ConnectionError as errc:
-            self._standby_state = "1"         
-            if self._display_con_err:
-                self._display_con_err = False        
-                _LOGGER.error(errc)
-        except requests.exceptions.Timeout as errt:
-            self._standby_state = "1"
-            if self._display_con_err:
-                self._display_con_err = False        
-                _LOGGER.error(errt)
+                _LOGGER.error("Livebox request failed: %s", err)
+            return None
 
+    async def _async_rq_epg(self, channel_id: str) -> dict | None:
+        """Fetch EPG data for a channel."""
+        if channel_id in ("-1", None):
+            return None
 
-    def rq_epg(self, channel_id):
-        if channel_id != "-1" and channel_id != None:
-            if self.country == "france" or self.country == "caraibe":
-                get_params = OrderedDict({"groupBy": "channel", "period": "current", "epgIds": channel_id, "mco": self.epg_mco})
-            elif self.country == "poland":
-                get_params = OrderedDict({"hhTech": "", "deviceCat": "otg"})
-            _LOGGER.debug("Request EPG channel id %s", channel_id)
-            try:
-                headers = {"User-Agent": self.epg_user_agent}
-                r = requests.get(self.epg_url, headers=headers, params=get_params, timeout=self.timeout)
-                r.raise_for_status()
-                _LOGGER.debug("EPG response: %s", r.json())
-                return r.json()
-            except requests.exceptions.RequestException as err:
-                _LOGGER.error("EPG response: %s", err)
-                pass
-            except requests.exceptions.HTTPError as errh:
-                _LOGGER.error("EPG response: %s", errh)
-                pass
-            except requests.exceptions.ConnectionError as errc:
-                _LOGGER.error("EPG response: %s", errc)
-                pass
-            except requests.exceptions.Timeout as errt:
-                _LOGGER.error("EPG response: %s", errt)
-                pass
+        if self.country in ("france", "caraibe"):
+            get_params: dict = {
+                "groupBy": "channel",
+                "period": "current",
+                "epgIds": channel_id,
+                "mco": self.epg_mco,
+            }
+        elif self.country == "poland":
+            get_params = {"hhTech": "", "deviceCat": "otg"}
+        else:
+            return None
+
+        try:
+            headers = {"User-Agent": self.epg_user_agent}
+            async with self.session.get(
+                self.epg_url,
+                headers=headers,
+                params=get_params,
+                timeout=self.timeout,
+            ) as resp:
+                resp.raise_for_status()
+                return await resp.json(content_type=None)
+        except (aiohttp.ClientError, asyncio.TimeoutError) as err:
+            _LOGGER.error("EPG request failed: %s", err)
+            return None

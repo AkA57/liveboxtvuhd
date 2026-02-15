@@ -1,42 +1,42 @@
-"""Support for interface with an Orange Livebox TV UHD appliance."""
-from datetime import timedelta
+"""Support for Orange Livebox TV UHD media player."""
+from __future__ import annotations
+
 import logging
 
-from .client import LiveboxTvUhdClient
-import requests
 import voluptuous as vol
 
-from homeassistant.components.media_player import PLATFORM_SCHEMA, MediaPlayerEntity
-from homeassistant.components.media_player.const import (
+from homeassistant.components.media_player import (
+    PLATFORM_SCHEMA as MEDIA_PLAYER_PLATFORM_SCHEMA,
+    MediaPlayerEntity,
     MediaPlayerEntityFeature,
-    MediaType
 )
-
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
     CONF_HOST,
     CONF_NAME,
     CONF_PORT,
-    CONF_SCAN_INTERVAL,
     STATE_OFF,
     STATE_ON,
     STATE_PAUSED,
     STATE_PLAYING,
 )
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers.device_registry import DeviceInfo
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
 import homeassistant.helpers.config_validation as cv
-import homeassistant.util.dt as dt_util
+
+from .client import LiveboxStateData
 from .const import (
-    SCAN_INTERVAL,
-    MIN_TIME_BETWEEN_SCANS,
-    MIN_TIME_BETWEEN_FORCED_SCANS,
+    CONF_COUNTRY,
+    DEFAULT_COUNTRY,
     DEFAULT_NAME,
     DEFAULT_PORT,
-    DEFAULT_COUNTRY,
-    CONF_COUNTRY
+    DOMAIN,
 )
-
+from .coordinator import LiveboxTvUhdCoordinator
 
 _LOGGER = logging.getLogger(__name__)
-
 
 SUPPORT_LIVEBOXUHD = (
     MediaPlayerEntityFeature.TURN_OFF
@@ -50,252 +50,191 @@ SUPPORT_LIVEBOXUHD = (
     | MediaPlayerEntityFeature.PLAY
 )
 
-
-PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
+# Deprecated YAML platform schema (triggers import)
+PLATFORM_SCHEMA = MEDIA_PLAYER_PLATFORM_SCHEMA.extend(
     {
         vol.Required(CONF_HOST): cv.string,
         vol.Optional(CONF_PORT, default=DEFAULT_PORT): cv.port,
         vol.Optional(CONF_NAME, default=DEFAULT_NAME): cv.string,
-        vol.Optional(CONF_COUNTRY, default=DEFAULT_COUNTRY): vol.In(["france", "poland", "caraibe"]),
-        vol.Optional(CONF_SCAN_INTERVAL, default=SCAN_INTERVAL): cv.time_period,
-    }, extra=vol.ALLOW_EXTRA
+        vol.Optional(CONF_COUNTRY, default=DEFAULT_COUNTRY): vol.In(
+            ["france", "poland", "caraibe"]
+        ),
+    },
+    extra=vol.ALLOW_EXTRA,
 )
 
+
 async def async_setup_platform(hass, config, async_add_entities, discovery_info=None):
-    """Set up the Orange Livebox TV UHD platform."""
-    host = config.get(CONF_HOST)
-    port = config.get(CONF_PORT)
-    name = config.get(CONF_NAME)
-    country = config.get(CONF_COUNTRY)
-    livebox_devices = []
-
-    try:
-        device = LiveboxTvUhdDevice(host, port, name, country)
-        livebox_devices.append(device)
-    except OSError:
-        _LOGGER.error(
-            "Failed to connect to Livebox TV UHD at %s:%s. "
-            "Please check your configuration",
-            host,
-            port,
+    """Set up via YAML platform (deprecated, triggers config flow import)."""
+    _LOGGER.warning(
+        "Configuration of %s media_player via platform YAML is deprecated. "
+        "Please use the UI or move config under 'liveboxtvuhd:' key",
+        DOMAIN,
+    )
+    hass.async_create_task(
+        hass.config_entries.flow.async_init(
+            DOMAIN,
+            context={"source": "import"},
+            data={
+                CONF_HOST: config[CONF_HOST],
+                CONF_PORT: config.get(CONF_PORT, DEFAULT_PORT),
+                CONF_NAME: config.get(CONF_NAME, DEFAULT_NAME),
+                CONF_COUNTRY: config.get(CONF_COUNTRY, DEFAULT_COUNTRY),
+            },
         )
-
-    async_add_entities(livebox_devices, True)
-
-
-class LiveboxTvUhdDevice(MediaPlayerEntity):
-    """Representation of an Orange Livebox TV UHD."""
-
-    def __init__(self, host, port, name, country):
-        """Initialize the Livebox TV UHD device."""
-
-        self._client = LiveboxTvUhdClient(host, port, country)
-        # Assume that the appliance is not muted
-        self._muted = False
-        self._name = name
-        self._current_source = None
-        self._state = None
-        self._channel_list = {}
-        self._current_channel = None
-        self._current_show = None
-        self._media_duration = None
-        self._media_position = None
-        self._media_image_url = None
-        self._media_last_updated = None
-        self._media_series_title = None
-        self._media_season = None
-        self._media_episode = None
-        self._media_type = MediaType.CHANNEL
+    )
 
 
-    async def async_update(self):
-        """Retrieve the latest data."""
-        try:
-            await self.hass.async_add_executor_job(self.refresh_livebox_data)
-            self._state = self.refresh_state()
-            self._media_type = self._client.media_type
-            self.refresh_channel_list()
-            channel = self._client.channel_name
-            _LOGGER.debug(channel)
-            if channel is not None:
-                self._current_channel = channel
-                self._current_show = self._client.show_title
-                self._media_duration = self._client.show_duration
-                self._media_image_url = self._client.show_img
-                self._media_position =  self._client.show_position
-                self._media_last_updated = dt_util.utcnow()
-                if self._media_type == MediaType.TVSHOW:
-                    self._media_series_title = self._client.show_series_title
-                    self._media_season = self._client.show_season
-                    self._media_episode = self._client.show_episode
-                else:
-                    self._media_series_title = None
-                    self._media_season = None
-                    self._media_episode = None
-        except requests.ConnectionError as ce:
-            self._state = None
-            _LOGGER.error(
-                "Failed to connect to Livebox TV UHD at %s:%s. "
-                "Please check your configuration.yaml. (%s)",
-                self._client.hostname,
-                self._client.port,
-                ce,
+async def async_setup_entry(
+    hass: HomeAssistant,
+    entry: ConfigEntry,
+    async_add_entities: AddEntitiesCallback,
+) -> None:
+    """Set up the media player from a config entry."""
+    coordinator: LiveboxTvUhdCoordinator = hass.data[DOMAIN][entry.entry_id]
+    async_add_entities([LiveboxTvUhdMediaPlayer(coordinator, entry)])
+
+
+class LiveboxTvUhdMediaPlayer(
+    CoordinatorEntity[LiveboxTvUhdCoordinator], MediaPlayerEntity
+):
+    """Representation of an Orange Livebox TV UHD media player."""
+
+    _attr_has_entity_name = True
+    _attr_name = "Media Player"
+    _attr_supported_features = SUPPORT_LIVEBOXUHD
+
+    def __init__(
+        self, coordinator: LiveboxTvUhdCoordinator, entry: ConfigEntry
+    ) -> None:
+        super().__init__(coordinator)
+        self._attr_muted = False
+        mac = coordinator.client.mac_address
+        if mac:
+            self._attr_unique_id = mac
+            self._attr_device_info = DeviceInfo(
+                identifiers={(DOMAIN, mac)},
+                connections={("mac", mac)},
+                name=entry.title,
+                manufacturer="Orange",
+                model="Livebox TV UHD",
             )
+        else:
+            self._attr_unique_id = entry.entry_id
+            self._attr_device_info = DeviceInfo(
+                identifiers={(DOMAIN, entry.entry_id)},
+                name=entry.title,
+                manufacturer="Orange",
+                model="Livebox TV UHD",
+            )
+
     @property
-    def unique_id(self) -> str | None:
-        """Return a unique ID for this entity."""
-        if self._client.mac_address:
-            return self._client.mac_address
+    def _data(self) -> LiveboxStateData | None:
+        return self.coordinator.data
+
+    @property
+    def state(self) -> str | None:
+        if self._data is None:
+            return None
+        if self._data.media_state == "PLAY":
+            return STATE_PLAYING
+        if self._data.media_state == "PAUSE":
+            return STATE_PAUSED
+        return STATE_ON if self._data.is_on else STATE_OFF
+
+    @property
+    def is_volume_muted(self) -> bool:
+        return self._attr_muted
+
+    @property
+    def source(self) -> str | None:
+        if self._data:
+            return self._data.channel_name
         return None
 
     @property
-    def name(self):
-        """Return the name of the device."""
-        return self._name
+    def source_list(self) -> list[str]:
+        if self._data and self._data.channel_list:
+            return [self._data.channel_list[k] for k in sorted(self._data.channel_list)]
+        return []
 
     @property
-    def state(self):
-        """Return the state of the device."""
-        return self._state
+    def media_content_type(self) -> str | None:
+        return self._data.media_type if self._data else None
 
     @property
-    def is_volume_muted(self):
-        """Boolean if volume is currently muted."""
-        return self._muted
+    def media_image_url(self) -> str | None:
+        return self._data.show_img if self._data else None
 
     @property
-    def source(self):
-        """Return the current input source."""
-        return self._current_channel
+    def media_title(self) -> str | None:
+        if self._data and self._data.channel_name:
+            if self._data.show_title:
+                return f"{self._data.channel_name} - {self._data.show_title}"
+            return self._data.channel_name
+        return None
 
     @property
-    def source_list(self):
-        """List of available input sources."""
-        # Sort channels by tvIndex
-        return [self._channel_list[c] for c in sorted(self._channel_list.keys())]
+    def media_series_title(self) -> str | None:
+        return self._data.show_series_title if self._data else None
 
     @property
-    def media_content_type(self):
-        """Content type of current playing media."""
-        return self._client.media_type
+    def media_season(self) -> int | None:
+        return self._data.show_season if self._data else None
 
     @property
-    def media_image_url(self):
-        """Image url of current playing media."""
-        return self._media_image_url
+    def media_episode(self) -> int | None:
+        return self._data.show_episode if self._data else None
 
     @property
-    def media_title(self):
-        """Title of current playing media."""
-        if self._current_channel:
-            if self._current_show:
-                return f"{self._current_channel} - {self._current_show}"
-            return self._current_channel
+    def media_duration(self) -> int | None:
+        return self._data.show_duration if self._data else None
 
     @property
-    def media_series_title(self):
-        """Title of series of current playing media, TV show only."""
-        return self._media_series_title
+    def media_position(self) -> int | None:
+        return self._data.show_position if self._data else None
 
-    @property
-    def media_season(self):
-        """Season of current playing media, TV show only."""
-        return self._media_season
+    async def async_turn_on(self) -> None:
+        await self.coordinator.client.async_turn_on()
+        await self.coordinator.async_refresh()
 
-    @property
-    def media_episode(self):
-        """Episode of current playing media, TV show only."""
-        return self._media_episode
+    async def async_turn_off(self) -> None:
+        await self.coordinator.client.async_turn_off()
+        await self.coordinator.async_refresh()
 
-    @property
-    def media_duration(self):
-        """Duration of current playing media in seconds."""
-        return self._media_duration
+    async def async_volume_up(self) -> None:
+        await self.coordinator.client.async_volume_up()
+        await self.coordinator.async_refresh()
 
-    @property
-    def media_position(self):
-        """Position of current playing media in seconds."""
-        return self._media_position
+    async def async_volume_down(self) -> None:
+        await self.coordinator.client.async_volume_down()
+        await self.coordinator.async_refresh()
 
-    @property
-    def media_position_updated_at(self):
-        """When was the position of the current playing media valid.
+    async def async_mute_volume(self, mute: bool) -> None:
+        self._attr_muted = mute
+        await self.coordinator.client.async_mute()
+        await self.coordinator.async_refresh()
 
-        Returns value from homeassistant.util.dt.utcnow().
-        """
-        return self._media_last_updated
+    async def async_media_play_pause(self) -> None:
+        await self.coordinator.client.async_play_pause()
+        await self.coordinator.async_refresh()
 
-    @property
-    def supported_features(self):
-        """Flag media player features that are supported."""
-        return SUPPORT_LIVEBOXUHD
+    async def async_media_play(self) -> None:
+        await self.coordinator.client.async_play()
+        await self.coordinator.async_refresh()
 
-    def refresh_channel_list(self):
-        """Refresh the list of available channels."""
-        new_channel_list = {}
-        # update channels
-        for channel in self._client.get_channels():
-            new_channel_list[int(channel["index"])] = channel["index"] + ". " + channel["name"]
-        self._channel_list = new_channel_list
+    async def async_media_pause(self) -> None:
+        await self.coordinator.client.async_pause()
+        await self.coordinator.async_refresh()
 
-    def refresh_livebox_data(self):
-        info = self._client.info
+    async def async_media_next_track(self) -> None:
+        await self.coordinator.client.async_channel_up()
+        await self.coordinator.async_refresh()
 
-    def refresh_state(self):
-        """Refresh the current media state."""
-        state = self._client.media_state
-        if state == "PLAY":
-            return STATE_PLAYING
-        if state == "PAUSE":
-            return STATE_PAUSED
-        return STATE_ON if self._client.is_on else STATE_OFF
+    async def async_media_previous_track(self) -> None:
+        await self.coordinator.client.async_channel_down()
+        await self.coordinator.async_refresh()
 
-    def turn_off(self):
-        """Turn off media player."""
-        self._state = STATE_OFF
-        self._client.turn_off()
-
-    def turn_on(self):
-        """Turn on the media player."""
-        self._state = STATE_ON
-        self._client.turn_on()
-
-    def volume_up(self):
-        """Volume up the media player."""
-        self._client.volume_up()
-
-    def volume_down(self):
-        """Volume down media player."""
-        self._client.volume_down()
-
-    def mute_volume(self, mute):
-        """Send mute command."""
-        self._muted = mute
-        self._client.mute()
-
-    def media_play_pause(self):
-        """Simulate play pause media player."""
-        self._client.play_pause()
-
-    def select_source(self, source):
-        """Select input source."""
-        self._current_source = source
-        self._client.channel_name = source
-
-    def media_play(self):
-        """Send play command."""
-        self._state = STATE_PLAYING
-        self._client.play()
-
-    def media_pause(self):
-        """Send media pause command to media player."""
-        self._state = STATE_PAUSED
-        self._client.pause()
-
-    def media_next_track(self):
-        """Send next track command."""
-        self._client.channel_up()
-
-    def media_previous_track(self):
-        """Send the previous track command."""
-        self._client.channel_down()
+    async def async_select_source(self, source: str) -> None:
+        await self.coordinator.client.async_set_channel_by_name(source)
+        await self.coordinator.async_refresh()
