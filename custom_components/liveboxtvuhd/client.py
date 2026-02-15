@@ -68,6 +68,9 @@ class LiveboxTvUhdClient(object):
         self._show_duration = 0
         self._show_position = 0
         self._last_channel_id = None
+        # EPG cache for Poland
+        self._epg_cache = None
+        self._epg_cache_date = None
         self._cache_channel_img = {}
 
     def update(self):
@@ -422,6 +425,11 @@ class LiveboxTvUhdClient(object):
                     from datetime import timedelta
                     target_23h = target_23h - timedelta(days=1)
                 epg_date = str(calendar.timegm(target_23h.utctimetuple()))
+                # Return cached EPG if same period
+                if self._epg_cache is not None and self._epg_cache_date == epg_date:
+                    _LOGGER.debug("EPG cache HIT for date=%s", epg_date)
+                    return self._epg_cache
+                _LOGGER.debug("EPG cache MISS, fetching for date=%s", epg_date)
                 get_params = OrderedDict({"date": epg_date, "deviceCat": "otg"})
             _LOGGER.debug("EPG request for channel_id=%s, country=%s, params=%s", channel_id, self.country, dict(get_params))
             try:
@@ -432,6 +440,11 @@ class LiveboxTvUhdClient(object):
                 data = r.json()
                 if data:
                     _LOGGER.debug("EPG data OK for channel_id=%s (keys=%s)", channel_id, list(data.keys()) if isinstance(data, dict) else len(data))
+                    # Cache EPG data for Poland
+                    if self.country == "poland":
+                        self._epg_cache = data
+                        self._epg_cache_date = epg_date
+                        _LOGGER.debug("EPG cached for date=%s", epg_date)
                 else:
                     _LOGGER.debug("EPG data EMPTY for channel_id=%s", channel_id)
                 return data
