@@ -13,7 +13,7 @@
       }
     },
     "error": {
-      "cannot_connect": "Nie mo\u017cna po\u0142\u0105czy\u0107 si\u0119 z Livebox. Sprawd\u017a adres i port."
+      "cannot_connect": "Nie mo\u017cna po\u0142\u0105czy\u0107 si\u0119 z Livebox.\nSprawd\u017a adres i port oraz upewnij si\u0119, \u017ce Livebox jest w\u0142\u0105czony."
     },
     "abort": {
       "already_configured": "To urz\u0105dzenie jest ju\u017c skonfigurowane."

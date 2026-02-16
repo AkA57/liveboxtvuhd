@@ -1,19 +1,19 @@
 # Livebox TV UHD
 
-This is a custom component to allow control of Livebox TV UHD in [Homeassistant](https://home-assistant.io).
+This is a custom component to allow control of Livebox TV UHD & TV6 in [Homeassistant](https://home-assistant.io).
 
 - Support for **Orange France**, **Orange Caribbean** (thanks to alanstrok) and **Orange Poland** (thanks to WRLPDZ and paweldepta)
-- Power On/Off
+- Power (on/off/toggle)
 - Play/Pause
-- Next/Previous (Channel)
+- Channel (next/previous)
 - Volume (+/-/mute)
 - Channel source
-- Retrieval for displaying in home assistant of:
+- Retrieval EPG for displaying:
   - Channel name
   - Show
   - Show background image
   - Show time
-  - Serie title, season and episode
+  - Serie title, season and episode (if available)
 
 Two entities are created under a single device:
 - **Media Player** entity to handle the features above

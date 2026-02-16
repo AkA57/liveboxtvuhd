@@ -13,7 +13,7 @@
       }
     },
     "error": {
-      "cannot_connect": "Impossible de se connecter \u00e0 la Livebox. V\u00e9rifiez l'adresse et le port."
+      "cannot_connect": "Impossible de se connecter \u00e0 la Livebox.\nV\u00e9rifier l'adresse et le port et assurez-vous que la Livebox est allum\u00e9e."
     },
     "abort": {
       "already_configured": "Cet appareil est d\u00e9j\u00e0 configur\u00e9."

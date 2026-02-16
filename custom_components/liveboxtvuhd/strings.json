@@ -13,7 +13,7 @@
       }
     },
     "error": {
-      "cannot_connect": "Cannot connect to the Livebox. Please check the host and port."
+      "cannot_connect": "Cannot connect to the Livebox.\nCheck the address and port and make sure the Livebox is turned on."
     },
     "abort": {
       "already_configured": "This device is already configured."
