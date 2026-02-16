@@ -1,2 +1,3 @@
 custom_components/liveboxtvuhd/__pycache__/*
 custom_components/liveboxtvuhd/livebox-emulator.py
+.vscode/settings.json

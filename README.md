@@ -1,29 +1,32 @@
-# Livebox TV UHD
+# Livebox TV UHD & TV6
 
-This is a custom component to allow control of Livebox TV UHD & TV6 in [Homeassistant](https://home-assistant.io).
+This is a _custom component_ for [Home Assistant](https://www.home-assistant.io/),
+The `liveboxtvuhd` integration allows you to observe and control [Livebox TV UHD & TV6](http://www.orange.fr/) for **Orange France**, **Orange Caribbean** and **Orange Poland**.
 
-- Support for **Orange France**, **Orange Caribbean** (thanks to alanstrok) and **Orange Poland** (thanks to WRLPDZ and paweldepta)
-- Power (on/off/toggle)
-- Play/Pause
-- Channel (next/previous)
-- Volume (+/-/mute)
-- Channel source
-- Retrieval EPG for displaying:
-  - Channel name
-  - Show
-  - Show background image
-  - Show time
+![GitHub release](https://img.shields.io/github/release/AkA57/liveboxtvuhd)
+[![hacs_badge](https://img.shields.io/badge/HACS-Default-orange.svg)](https://github.com/hacs/integration)
+
+There is currently support for the following entities within Home Assistant:
+- **Media Player** with EPG:
+  - Channel source (number + name)
+  - Current show with image
+  - Current time
   - Serie title, season and episode (if available)
+- **Remote**:
+  - Power (on/off/toggle)
+  - Play/Pause
+  - Channel (next/previous)
+  - Volume (+/-/mute)
+  - ...
 
-Two entities are created under a single device:
-- **Media Player** entity to handle the features above
-- **Remote** entity to bring additional controls
 
 ## Installation
 
 **Recommended**
 
-Use [HACS](https://hacs.xyz/).
+Add `liveboxtvuhd` with HACS.
+
+[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=AkA57&repository=liveboxtvuhd&category=integration)
 
 **Manual**
 
@@ -38,9 +41,13 @@ Use [HACS](https://hacs.xyz/).
 
 ### UI (Recommended)
 
+Add your device via the Integration menu.
 1. Go to **Settings > Devices & Services > Add Integration**
 2. Search for **Orange Livebox TV UHD**
-3. Enter the host, port, name and country of your Livebox
+
+[![Open your Home Assistant instance and start setting up a new integration.](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=liveboxtvuhd)
+
+3. Enter the host, port, name and country of your Livebox TV
 4. Both entities (media player and remote) are automatically created under a single device
 
 ### YAML (Deprecated)

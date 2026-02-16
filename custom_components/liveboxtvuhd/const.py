@@ -7,10 +7,11 @@ DOMAIN = "liveboxtvuhd"
 PLATFORMS = ["media_player", "remote"]
 COUNTRIES = ["france", "caraibe", "poland"]
 
-SCAN_INTERVAL = timedelta(seconds=10)
+SCAN_INTERVAL = timedelta(seconds=30)
+CONF_COUNTRY = "country"
+
 DEFAULT_NAME = "Orange Livebox TV UHD"
 DEFAULT_PORT = 8080
-CONF_COUNTRY = "country"
 DEFAULT_COUNTRY = "france"
 
 # Livebox operation codes
@@ -18,6 +19,7 @@ OPERATION_INFORMATION = "10"
 OPERATION_CHANNEL_CHANGE = "09"
 OPERATION_KEYPRESS = "01"
 
+# Livebox key codes
 KEYS = {
     "POWER": 116,
     "0": 512,
