@@ -20,6 +20,36 @@ There is currently support for the following entities within Home Assistant:
   - Volume (+/-/mute)
   - ...
 
+## Missing channels or EPG
+
+If you notice a missing channel or an incorrect EPG ID, please open an [Issue](https://github.com/AkA57/liveboxtvuhd/issues).
+
+The following channels are currently missing an EPG ID:
+
+Country|Index|Channel|Status
+--|--|--|--
+France|902|FRANCE 2 UHD|EPG ID unknown
+Cara\u00efbes|4|CANAL 10 GUADELOUPE|EPG ID unknown
+Cara\u00efbes|6|KOUROU TV|EPG ID unknown
+Cara\u00efbes|7|KMT|EPG ID unknown
+Cara\u00efbes|8|IO TV|EPG ID unknown
+Cara\u00efbes|9|ZITATA TV|EPG ID unknown
+Cara\u00efbes|92|GULLI MAX|EPG ID unknown
+Cara\u00efbes|93|TFOU MAX|EPG ID unknown
+Cara\u00efbes|116|IMEARTH|EPG ID unknown
+Cara\u00efbes|139|MCM|EPG ID unknown
+Cara\u00efbes|148|ADN|EPG ID unknown
+Cara\u00efbes|150|TRACE URBAN|EPG ID unknown
+Cara\u00efbes|221|SOUVENIRS FROM EARTH|EPG ID unknown
+Cara\u00efbes|230|BSMART 4CHANGE|EPG ID unknown
+Cara\u00efbes|239|AFRICA 24|EPG ID unknown
+Cara\u00efbes|242|MEDI 1 TV|EPG ID unknown
+Cara\u00efbes|396|TAHITI NUI TELEVISION|EPG ID unknown
+Cara\u00efbes|418|ARTE GERMANY|EPG ID unknown
+Cara\u00efbes|444|RTP 3|EPG ID unknown
+Cara\u00efbes|445|RECORD NEWS|EPG ID unknown
+
+
 
 ## Installation
 
@@ -84,6 +114,7 @@ Name|Required|Description|Default
 `port`|no|Port number|8080
 `name`|no|Friendly name|Orange Livebox TV UHD
 `country`|no|Choose between `france`, `caraibe` and `poland`|`france`
+
 
 ## Resources
 ### Remote commands
