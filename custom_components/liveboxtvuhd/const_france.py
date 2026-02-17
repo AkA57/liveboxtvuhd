@@ -23,7 +23,7 @@ CHANNELS = [
     {"index": "16",  "epg_id": "2111", "name": "FRANCEINFO:"},
     {"index": "17",  "epg_id": "458",  "name": "CSTAR"},
     {"index": "18",  "epg_id": "4139",  "name": "T18"},
-    {"index": "19",  "epg_id": "160",  "name": "NOVO19"},
+    {"index": "19",  "epg_id": "-1",  "name": "NOVO19"},
     {"index": "20",  "epg_id": "1404", "name": "TF1 SERIES FILMS"},
     {"index": "21",  "epg_id": "1401", "name": "LA CHAINE L'EQUIPE"},
     {"index": "22",  "epg_id": "1403", "name": "6TER"},

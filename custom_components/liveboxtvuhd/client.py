@@ -98,6 +98,10 @@ class LiveboxTvUhdClient:
         self._cached_show_duration: int = 0
         self._cached_channel_name: str | None = None
 
+        # Cached EPG program list for France/Caraibe
+        self._epg_programs: list | None = None
+        self._epg_programs_channel_id: str | None = None
+
         # EPG response cache for Poland (avoid re-fetching full 24h guide)
         self._epg_cache: dict | None = None
         self._epg_cache_date: str | None = None
@@ -144,17 +148,16 @@ class LiveboxTvUhdClient:
 
         # If a known channel is displayed
         if channel_id and self.get_channel_from_epg_id(channel_id):
-            need_epg_refresh = (
-                channel_id != self._last_channel_id
-                or self._cached_show_position > self._cached_show_duration
-            )
+            channel_changed = channel_id != self._last_channel_id
+            show_expired = self._cached_show_position > self._cached_show_duration
 
-            if need_epg_refresh:
+            if channel_changed:
                 self._last_channel_id = channel_id
                 chan = self.get_channel_from_epg_id(channel_id)
                 self._cached_channel_name = f'{chan["index"]}. {chan["name"]}'
 
-                # Reset cached EPG data
+            if channel_changed or show_expired:
+                # Reset cached EPG show data
                 self._cached_show_series_title = None
                 self._cached_show_season = None
                 self._cached_show_episode = None
@@ -163,11 +166,16 @@ class LiveboxTvUhdClient:
                 self._cached_show_start_dt = 0
                 self._cached_show_duration = 0
 
-                # Fetch EPG
-                epg_data = await self._async_rq_epg(channel_id)
                 if self.country in ("france", "caraibe"):
-                    self._parse_epg_france(epg_data, channel_id)
+                    # Try to find current show in cached programs
+                    if not channel_changed and self._epg_programs and self._epg_programs_channel_id == channel_id:
+                        self._apply_current_program_france()
+                    # Fetch from API if channel changed or no match in cache
+                    if self._cached_show_start_dt == 0:
+                        epg_data = await self._async_rq_epg(channel_id)
+                        self._parse_epg_france(epg_data, channel_id)
                 elif self.country == "poland":
+                    epg_data = await self._async_rq_epg(channel_id)
                     self._parse_epg_poland(epg_data, channel_id)
 
             # Update position
@@ -240,7 +248,31 @@ class LiveboxTvUhdClient:
         programs = epg_data[channel_id]
         if not programs:
             return
-        prog = programs[0]
+
+        # Cache the full program list
+        self._epg_programs = programs
+        self._epg_programs_channel_id = channel_id
+
+        self._apply_current_program_france()
+
+    def _apply_current_program_france(self) -> None:
+        """Find and apply the program matching the current time."""
+        if not self._epg_programs:
+            return
+
+        now_ts = calendar.timegm(dt_util.utcnow().utctimetuple())
+
+        # Find the program that covers the current time
+        prog = None
+        for p in self._epg_programs:
+            start = p.get("diffusionDate", 0)
+            duration = p.get("duration", 0)
+            if start <= now_ts < start + duration:
+                prog = p
+                break
+
+        if prog is None:
+            return
 
         if prog.get("programType") == "EPISODE":
             self._cached_show_series_title = prog.get("title")
