@@ -21,6 +21,7 @@ from homeassistant.const import (
     STATE_PLAYING,
 )
 from homeassistant.core import HomeAssistant
+import homeassistant.util.dt as dt_util
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
@@ -193,6 +194,13 @@ class LiveboxTvUhdMediaPlayer(
     @property
     def media_position(self) -> int | None:
         return self._data.show_position if self._data else None
+
+    @property
+    def media_position_updated_at(self):
+        """Return when the position was last updated."""
+        if self._data and self._data.show_position > 0:
+            return dt_util.utcnow()
+        return None
 
     async def async_turn_on(self) -> None:
         await self.coordinator.client.async_turn_on()
