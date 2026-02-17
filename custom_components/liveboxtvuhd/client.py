@@ -13,7 +13,7 @@ import homeassistant.util.dt as dt_util
 from homeassistant.components.media_player.const import MediaType
 from homeassistant.helpers.device_registry import format_mac
 
-from . import const_caraibe, const_france, const_poland
+from . import const_caraibes, const_france, const_poland
 from .const import (
     KEYS,
     OPERATION_CHANNEL_CHANGE,
@@ -23,7 +23,7 @@ from .const import (
 
 COUNTRY_MODULES = {
     "france": const_france,
-    "caraibe": const_caraibe,
+    "caraibe": const_caraibes,
     "poland": const_poland,
 }
 
@@ -98,7 +98,7 @@ class LiveboxTvUhdClient:
         self._cached_show_duration: int = 0
         self._cached_channel_name: str | None = None
 
-        # Cached EPG program list for France/Caraibe
+        # Cached EPG program list for France/Caraïbes
         self._epg_programs: list | None = None
         self._epg_programs_channel_id: str | None = None
 
@@ -242,7 +242,7 @@ class LiveboxTvUhdClient:
         )
 
     def _parse_epg_france(self, epg_data: dict | None, channel_id: str) -> None:
-        """Parse EPG response for France/Caraibe."""
+        """Parse EPG response for France/Caraïbes."""
         if epg_data is None or channel_id not in epg_data:
             return
         programs = epg_data[channel_id]
