@@ -3,7 +3,9 @@
   "name": "Orange Livebox TV UHD",
   "version": "2.0.0",
   "documentation": "https://github.com/AkA57/liveboxtvuhd",
+  "issue_tracker": "https://github.com/AkA57/liveboxtvuhd/issues",
   "dependencies": [],
+  "requirements": [],
   "codeowners": [
     "@AkA57"
   ],

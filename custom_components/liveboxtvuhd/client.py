@@ -87,7 +87,7 @@ class LiveboxTvUhdClient:
         self._last_channel_id: str | None = None
         self._display_con_err = True
 
-        # Cached EPG data (only refreshed on channel change)
+        # Cached EPG data (only refreshed on channel/show change)
         self._cached_show_title: str | None = None
         self._cached_show_series_title: str | None = None
         self._cached_show_season: int | None = None
@@ -456,7 +456,7 @@ class LiveboxTvUhdClient:
             ) as resp:
                 resp.raise_for_status()
                 data = await resp.json(content_type=None)
-                # Cache full EPG response for Poland
+                # Cache full 24h EPG response for Poland
                 if data and self.country == "poland":
                     self._epg_cache = data
                     self._epg_cache_date = epg_date
