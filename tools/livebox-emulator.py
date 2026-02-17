@@ -36,7 +36,7 @@ class testHTTPServer_RequestHandler(BaseHTTPRequestHandler):
         print(f"Received key: {key}")
         if key == '402':
           testHTTPServer_RequestHandler.index += 1
-          
+
           if testHTTPServer_RequestHandler.index >= len(CHANNELS):
             testHTTPServer_RequestHandler.index = 0
         elif key == '403':
@@ -47,6 +47,12 @@ class testHTTPServer_RequestHandler(BaseHTTPRequestHandler):
           print(f"Key {key} received but no specific action defined.")
       else:
         print("No key found in the request.")
+
+      message = bytes('{ "result": { "responseCode": "0", "message": "ok" } }', 'utf8')
+      self.send_header('Content-type','text/json; charset=utf-8')
+      self.send_header('Content-length', str(len(message)))
+      self.end_headers()
+      self.wfile.write(message)
     return
   
 def run():

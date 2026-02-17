@@ -1,6 +1,7 @@
 # Livebox TV UHD & TV6
 
-This is a _custom component_ for [Home Assistant](https://www.home-assistant.io/),
+This is a _custom component_ for [Home Assistant](https://www.home-assistant.io/).
+
 The `liveboxtvuhd` integration allows you to observe and control [Livebox TV UHD & TV6](http://www.orange.fr/) for **Orange France**, **Orange Caribbean** and **Orange Poland**.
 
 ![GitHub release](https://img.shields.io/github/release/AkA57/liveboxtvuhd)
@@ -22,13 +23,13 @@ There is currently support for the following entities within Home Assistant:
 
 ## Installation
 
-**Recommended**
+### HACS (Recommended)
 
 Add `liveboxtvuhd` with HACS.
 
 [![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=AkA57&repository=liveboxtvuhd&category=integration)
 
-**Manual**
+### Manual (Deprecated)
 
 1. Using the tool of choice open the directory (folder) for your HA configuration (where you find `configuration.yaml`).
 2. If you do not have a `custom_components` directory (folder) there, you need to create it.
@@ -84,6 +85,7 @@ Name|Required|Description|Default
 `name`|no|Friendly name|Orange Livebox TV UHD
 `country`|no|Choose between `france`, `caraibe` and `poland`|`france`
 
+## Resources
 ### Remote commands
 
 Available commands for the remote entity:
