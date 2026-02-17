@@ -29,25 +29,25 @@ The following channels are currently missing an EPG ID:
 Country|Index|Channel|Status
 --|--|--|--
 France|902|FRANCE 2 UHD|EPG ID unknown
-Cara\u00efbes|4|CANAL 10 GUADELOUPE|EPG ID unknown
-Cara\u00efbes|6|KOUROU TV|EPG ID unknown
-Cara\u00efbes|7|KMT|EPG ID unknown
-Cara\u00efbes|8|IO TV|EPG ID unknown
-Cara\u00efbes|9|ZITATA TV|EPG ID unknown
-Cara\u00efbes|92|GULLI MAX|EPG ID unknown
-Cara\u00efbes|93|TFOU MAX|EPG ID unknown
-Cara\u00efbes|116|IMEARTH|EPG ID unknown
-Cara\u00efbes|139|MCM|EPG ID unknown
-Cara\u00efbes|148|ADN|EPG ID unknown
-Cara\u00efbes|150|TRACE URBAN|EPG ID unknown
-Cara\u00efbes|221|SOUVENIRS FROM EARTH|EPG ID unknown
-Cara\u00efbes|230|BSMART 4CHANGE|EPG ID unknown
-Cara\u00efbes|239|AFRICA 24|EPG ID unknown
-Cara\u00efbes|242|MEDI 1 TV|EPG ID unknown
-Cara\u00efbes|396|TAHITI NUI TELEVISION|EPG ID unknown
-Cara\u00efbes|418|ARTE GERMANY|EPG ID unknown
-Cara\u00efbes|444|RTP 3|EPG ID unknown
-Cara\u00efbes|445|RECORD NEWS|EPG ID unknown
+Caraîbes|4|CANAL 10 GUADELOUPE|EPG ID unknown
+Caraîbes|6|KOUROU TV|EPG ID unknown
+Caraîbes|7|KMT|EPG ID unknown
+Caraîbes|8|IO TV|EPG ID unknown
+Caraîbes|9|ZITATA TV|EPG ID unknown
+Caraîbes|92|GULLI MAX|EPG ID unknown
+Caraîbes|93|TFOU MAX|EPG ID unknown
+Caraîbes|116|IMEARTH|EPG ID unknown
+Caraîbes|139|MCM|EPG ID unknown
+Caraîbes|148|ADN|EPG ID unknown
+Caraîbes|150|TRACE URBAN|EPG ID unknown
+Caraîbes|221|SOUVENIRS FROM EARTH|EPG ID unknown
+Caraîbes|230|BSMART 4CHANGE|EPG ID unknown
+Caraîbes|239|AFRICA 24|EPG ID unknown
+Caraîbes|242|MEDI 1 TV|EPG ID unknown
+Caraîbes|396|TAHITI NUI TELEVISION|EPG ID unknown
+Caraîbes|418|ARTE GERMANY|EPG ID unknown
+Caraîbes|444|RTP 3|EPG ID unknown
+Caraîbes|445|RECORD NEWS|EPG ID unknown
 
 
 
