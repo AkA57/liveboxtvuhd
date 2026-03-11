@@ -9,6 +9,7 @@ COUNTRIES = ["france", "caraibe", "poland"]
 
 SCAN_INTERVAL = timedelta(seconds=30)
 CONF_COUNTRY = "country"
+CONF_MAC = "mac"
 
 DEFAULT_NAME = "Orange Livebox TV UHD"
 DEFAULT_PORT = 8080

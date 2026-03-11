@@ -110,6 +110,10 @@ class LiveboxTvUhdClient:
     def mac_address(self) -> str | None:
         return self._mac_address
 
+    def restore_mac_address(self, mac: str) -> None:
+        """Restore a previously discovered MAC address."""
+        self._mac_address = mac
+
     def _build_channel_list(self) -> dict[int, str]:
         """Build sorted channel list for source selection."""
         return {

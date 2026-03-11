@@ -8,13 +8,13 @@ import voluptuous as vol
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_HOST, CONF_NAME, CONF_PORT
 from homeassistant.core import HomeAssistant
-from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 import homeassistant.helpers.config_validation as cv
 
 from .client import LiveboxTvUhdClient
 from .const import (
     CONF_COUNTRY,
+    CONF_MAC,
     COUNTRIES,
     DEFAULT_COUNTRY,
     DEFAULT_NAME,
@@ -69,12 +69,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         country=entry.data.get(CONF_COUNTRY, DEFAULT_COUNTRY),
     )
 
-    if not await client.async_test_connection():
-        raise ConfigEntryNotReady(
-            f"Cannot connect to Livebox at {entry.data[CONF_HOST]}:{entry.data.get(CONF_PORT, DEFAULT_PORT)}"
-        )
+    # Restore cached MAC address so unique_id is stable even when device is off
+    if CONF_MAC in entry.data:
+        client.restore_mac_address(entry.data[CONF_MAC])
 
-    coordinator = LiveboxTvUhdCoordinator(hass, client)
+    coordinator = LiveboxTvUhdCoordinator(hass, client, entry)
     await coordinator.async_config_entry_first_refresh()
 
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator
