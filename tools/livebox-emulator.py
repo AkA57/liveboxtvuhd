@@ -27,6 +27,31 @@ class testHTTPServer_RequestHandler(BaseHTTPRequestHandler):
       # Write content as utf-8 data
       self.wfile.write(message)
 
+    elif self.path.startswith('/remoteControl/cmd?operation=09'):
+      query_components = dict(urlparse.parse_qsl(urlparse.urlsplit(self.path).query))
+      epg_id = query_components.get('epg_id', None)
+
+      if epg_id:
+        # Strip padding characters (e.g. "******1234" -> "1234")
+        epg_id_clean = epg_id.lstrip('*')
+        found = False
+        for i, ch in enumerate(CHANNELS):
+          if ch['epg_id'] == epg_id_clean:
+            testHTTPServer_RequestHandler.index = i
+            print(f"Channel change to: {ch['name']} - index: {i} - epg_id: {epg_id_clean}")
+            found = True
+            break
+        if not found:
+          print(f"Channel with epg_id {epg_id_clean} not found.")
+      else:
+        print("No epg_id found in the request.")
+
+      message = bytes('{ "result": { "responseCode": "0", "message": "ok" } }', 'utf8')
+      self.send_header('Content-type','text/json; charset=utf-8')
+      self.send_header('Content-length', str(len(message)))
+      self.end_headers()
+      self.wfile.write(message)
+
     elif self.path.startswith('/remoteControl/cmd?operation=01&key='):
       # Extract the key value from the path
       query_components = dict(urlparse.parse_qsl(urlparse.urlsplit(self.path).query))

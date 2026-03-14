@@ -147,7 +147,8 @@ class LiveboxTvUhdRemote(
 
     async def async_turn_on(self, activity: str | None = None, **kwargs: Any) -> None:
         """Turn on the Livebox, optionally tuning to a channel."""
-        await self.coordinator.client.async_turn_on()
+        if not self.is_on:
+            await self.coordinator.client.async_turn_on()
         channel = activity or kwargs.get(ATTR_ACTIVITY)
         if channel:
             await self.coordinator.client.async_set_channel_by_name(channel)
