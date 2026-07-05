@@ -1,31 +1,65 @@
-# Livebox TV UHD
+# Livebox TV UHD & TV6
 
-This is a custom component to allow control of Livebox TV UHD in [Homeassistant](https://home-assistant.io).
+This is a _custom component_ for [Home Assistant](https://www.home-assistant.io/).
 
-- :new: **Support for Orange France, Orange Caribbean (thanks to alanstrok) and Orange Poland (thanks to WRLPDZ)**  :new:
-- Power On/Off
-- Play/Pause
-- Next/Previous (Channel)
-- Volume (+/-/mute)
-- Channel source
-- Retrieval for displaying in home assistant of:
-  - Channel name
-  - Show
-  - Show background image
-  - Show time
-  - Serie title, season and episode
+The `liveboxtvuhd` integration allows you to observe and control [Livebox TV UHD & TV6](http://www.orange.fr/) for **Orange France**, **Orange Caribbean** and **Orange Poland**.
 
-Two platform entities are available : 
-- media player entity to handle the features above
-- remote entity to bring additional controls
+![GitHub release](https://img.shields.io/github/release/AkA57/liveboxtvuhd)
+[![hacs_badge](https://img.shields.io/badge/HACS-Default-orange.svg)](https://github.com/hacs/integration)
 
-## Installation 
+There is currently support for the following entities within Home Assistant:
+- **Media Player** with EPG:
+  - Channel source (number + name)
+  - Current show with image
+  - Current time
+  - Serie title, season and episode (if available)
+- **Remote**:
+  - Power (on/off/toggle)
+  - Play/Pause
+  - Channel (next/previous)
+  - Volume (+/-/mute)
+  - ...
 
-**Recommanded**
+## Missing channels or EPG
 
-Use [HACS](https://hacs.xyz/).
+If you notice a missing channel or an incorrect EPG ID, please open an [Issue](https://github.com/AkA57/liveboxtvuhd/issues).
 
-**Manual**
+The following channels are currently missing an EPG ID:
+
+Country|Index|Channel|Status
+--|--|--|--
+France|902|FRANCE 2 UHD|EPG ID unknown
+Caraîbes|4|CANAL 10 GUADELOUPE|EPG ID unknown
+Caraîbes|6|KOUROU TV|EPG ID unknown
+Caraîbes|7|KMT|EPG ID unknown
+Caraîbes|8|IO TV|EPG ID unknown
+Caraîbes|9|ZITATA TV|EPG ID unknown
+Caraîbes|92|GULLI MAX|EPG ID unknown
+Caraîbes|93|TFOU MAX|EPG ID unknown
+Caraîbes|116|IMEARTH|EPG ID unknown
+Caraîbes|139|MCM|EPG ID unknown
+Caraîbes|148|ADN|EPG ID unknown
+Caraîbes|150|TRACE URBAN|EPG ID unknown
+Caraîbes|221|SOUVENIRS FROM EARTH|EPG ID unknown
+Caraîbes|230|BSMART 4CHANGE|EPG ID unknown
+Caraîbes|239|AFRICA 24|EPG ID unknown
+Caraîbes|242|MEDI 1 TV|EPG ID unknown
+Caraîbes|396|TAHITI NUI TELEVISION|EPG ID unknown
+Caraîbes|418|ARTE GERMANY|EPG ID unknown
+Caraîbes|444|RTP 3|EPG ID unknown
+Caraîbes|445|RECORD NEWS|EPG ID unknown
+
+
+
+## Installation
+
+### HACS (Recommended)
+
+Add `liveboxtvuhd` with HACS.
+
+[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=AkA57&repository=liveboxtvuhd&category=integration)
+
+### Manual (Deprecated)
 
 1. Using the tool of choice open the directory (folder) for your HA configuration (where you find `configuration.yaml`).
 2. If you do not have a `custom_components` directory (folder) there, you need to create it.
@@ -36,43 +70,60 @@ Use [HACS](https://hacs.xyz/).
 
 ## Configuration
 
-### Media Player
-Edit `configuration.yaml` and add `liveboxtvuhd` as a new `media_player`
+### UI (Recommended)
+
+Add your device via the Integration menu.
+
+[![Open your Home Assistant instance and start setting up a new integration.](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=liveboxtvuhd)
+
+1. Go to **Settings > Devices & Services > Add Integration**
+2. Search for **Orange Livebox TV UHD**
+3. Enter the host, port, name and country of your Livebox TV
+4. Both entities (media player and remote) are automatically created under a single device
+
+### YAML (Deprecated)
+
+YAML configuration is still supported for backward compatibility but will trigger an automatic import into the UI config entries. A deprecation warning will be logged.
+
+**Integration-level config** (recommended YAML format):
+
+```yaml
+liveboxtvuhd:
+  host: 192.168.1.2
+  port: 8080
+  name: Livebox Salon
+  country: france
+```
+
+**Platform-level config** (legacy, also triggers auto-import):
 
 ```yaml
 media_player:
   - platform: liveboxtvuhd
-    name: livebox-salon
+    name: Livebox Salon
     host: 192.168.1.2
     port: 8080
-    scan_interval: 30
     country: france
 ```
+
+> **Note:** In v1.x, you had to configure both `media_player:` and `remote:` platforms separately. This is no longer needed. A single configuration (UI or YAML) now creates both entities automatically. If you still have a `remote:` platform entry in your YAML, it will be ignored with a deprecation warning. You can safely remove it.
+
 Name|Required|Description|Default
 --|--|--|--
-`name`|no|Friendly name|livebox_salon
-`host`|yes|Host or ip address| 
-`port`|no|port number|8080 
-`scan_interval`|no|Time between scan in seconds|30
-`country`|no|choose between france, caraibe and poland|france
+`host`|yes|Host or IP address|
+`port`|no|Port number|8080
+`name`|no|Friendly name|Orange Livebox TV UHD
+`country`|no|Choose between `france`, `caraibe` and `poland`|`france`
 
-### Remote
-(Optional) add `remote` entity to have additional commands, with the same parameters : 
-```yaml
-remote:
-  - platform: liveboxtvuhd
-    name: livebox_salon
-    host: 192.168.1.2
-    port: 8080
-    scan_interval: 30
-    country: france
-```
 
-Available commands for remote entity :
+## Resources
+### Remote commands
+
+Available commands for the remote entity:
 
 Command|Description
 --|--
-POWER|Power toggle
+`POWER`|Power toggle
 `0`|0
 `1`|1
 `2`|2
@@ -104,7 +155,7 @@ POWER|Power toggle
 
 ## Examples
 ### Media Player
-With standard media-player 
+With standard media-player
 
 ![Example](https://github.com/AkA57/liveboxtvuhd/blob/master/screenshot/example2.png)
 ![Example](https://github.com/AkA57/liveboxtvuhd/blob/master/screenshot/example3.png)
@@ -219,7 +270,7 @@ custom_actions:
     icon: ok
     styles: |-
       :host {
-        width: 230px;      
+        width: 230px;
       }
       .circlepad {
         border: 1px solid #444;
@@ -286,7 +337,7 @@ styles: |-
   }
   #menu::part(icon) {
   color: rgb(229, 9, 20);
-  }  
+  }
   #netflix::part(icon) {
   color: rgb(229, 9, 20);
   }
@@ -311,7 +362,7 @@ grid_options:
   rows: 1
 ```
 
-To trigger additional commands with the remote entity :
+To trigger additional commands with the remote entity:
 ```yaml
 service: remote.send_command
 data:
